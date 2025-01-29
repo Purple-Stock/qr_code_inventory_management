@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MainNav } from "@/components/main-nav"
+import MainNav from "@/components/main-nav"
 import { Camera, ChevronRight } from "lucide-react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Card } from "@/components/ui/card"

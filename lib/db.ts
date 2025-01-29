@@ -33,27 +33,34 @@ class InMemoryDB {
   private nextStockInId = 1
 
   constructor() {
-    // Load data from localStorage on initialization
-    const savedData = localStorage.getItem("purple-stock-items")
-    if (savedData) {
-      const data = JSON.parse(savedData)
-      this.items = data.items
-      this.stockIns = data.stockIns || []
-      this.nextId = data.nextId
-      this.nextStockInId = data.nextStockInId || 1
+    this.loadFromStorage()
+  }
+
+  private loadFromStorage() {
+    if (typeof window !== "undefined") {
+      const savedData = localStorage.getItem("purple-stock-items")
+      if (savedData) {
+        const data = JSON.parse(savedData)
+        this.items = data.items
+        this.stockIns = data.stockIns || []
+        this.nextId = data.nextId
+        this.nextStockInId = data.nextStockInId || 1
+      }
     }
   }
 
   private saveToStorage() {
-    localStorage.setItem(
-      "purple-stock-items",
-      JSON.stringify({
-        items: this.items,
-        stockIns: this.stockIns,
-        nextId: this.nextId,
-        nextStockInId: this.nextStockInId,
-      }),
-    )
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "purple-stock-items",
+        JSON.stringify({
+          items: this.items,
+          stockIns: this.stockIns,
+          nextId: this.nextId,
+          nextStockInId: this.nextStockInId,
+        }),
+      )
+    }
   }
 
   async createItem(item: Omit<Item, "id" | "current_quantity">): Promise<Item> {

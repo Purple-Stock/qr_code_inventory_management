@@ -18,17 +18,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { getItems, duplicateItem, exportItemsToCSV } from "./actions"
+import { duplicateItem, exportItemsToCSV } from "./actions"
 import { toast } from "@/components/ui/use-toast"
 import { CSVImport } from "@/components/csv-import"
 import { Download, FileSpreadsheet } from "lucide-react"
+import { getDb } from "@/lib/db"
 
 export default function ItemList() {
   const [items, setItems] = useState([])
+  const db = getDb()
 
   useEffect(() => {
     async function fetchItems() {
-      const fetchedItems = await getItems()
+      const fetchedItems = await db.getItems()
       setItems(fetchedItems)
     }
     fetchItems()
@@ -41,7 +43,7 @@ export default function ItemList() {
         title: "Success",
         description: result.message,
       })
-      setItems(await getItems()) // Refresh the item list
+      setItems(await db.getItems()) // Refresh the item list
     } else {
       toast({
         title: "Error",
@@ -65,7 +67,7 @@ export default function ItemList() {
   }
 
   const refreshItems = async () => {
-    const fetchedItems = await getItems()
+    const fetchedItems = await db.getItems()
     setItems(fetchedItems)
   }
 

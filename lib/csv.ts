@@ -1,4 +1,8 @@
-export function generateCsv(items: any[]): string {
+import type { Database } from "@/types/database"
+
+type Item = Database["public"]["Tables"]["items"]["Row"]
+
+export function generateCsv(items: Item[]): string {
   // Define headers based on the first item's keys
   const headers = ["SKU", "Name", "Barcode", "Cost", "Price", "Type", "Brand", "Location", "Current Quantity"]
 

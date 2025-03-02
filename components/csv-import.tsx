@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { FileSpreadsheet } from "lucide-react"
+import { FileSpreadsheet, Upload } from "lucide-react"
 import { importItemsFromCSV } from "@/app/actions"
 import { toast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/contexts/language-context"
 
 interface CSVImportProps {
   onSuccess?: () => void
@@ -21,6 +22,7 @@ interface CSVImportProps {
 
 export function CSVImport({ onSuccess, trigger }: CSVImportProps) {
   const [open, setOpen] = useState(false)
+  const { t } = useLanguage()
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -32,22 +34,22 @@ export function CSVImport({ onSuccess, trigger }: CSVImportProps) {
 
       if (result.success) {
         toast({
-          title: "Success",
+          title: t("success"),
           description: result.message,
         })
         setOpen(false)
         onSuccess?.()
       } else {
         toast({
-          title: "Error",
+          title: t("error"),
           description: result.message,
           variant: "destructive",
         })
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to process CSV file",
+        title: t("error"),
+        description: t("failed_to_process_csv"),
         variant: "destructive",
       })
     }
@@ -59,35 +61,34 @@ export function CSVImport({ onSuccess, trigger }: CSVImportProps) {
         {trigger || (
           <Button variant="outline" size="sm">
             <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Import CSV
+            {t("import_csv")}
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Import Items from CSV</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file containing your items. The file should have the following headers: SKU, Name, Barcode,
-            Cost, Price, Type, Brand, Location, Current Quantity
-          </DialogDescription>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader className="space-y-3">
+          <DialogTitle>{t("import_items_from_csv")}</DialogTitle>
+          <DialogDescription>{t("upload_csv_description")}</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4">
-          <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8">
-            <FileSpreadsheet className="h-8 w-8 mb-4 text-muted-foreground" />
+        <div className="grid gap-6">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-10 transition-colors hover:border-muted-foreground/50">
+            <Upload className="h-10 w-10 text-muted-foreground mb-4" />
             <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" id="csv-upload" />
             <label
               htmlFor="csv-upload"
-              className="button bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md cursor-pointer"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-[#9333E9] text-primary-foreground hover:bg-[#9333E9]/90 h-10 py-2 px-4 cursor-pointer"
             >
-              Select CSV File
+              {t("select_csv_file")}
             </label>
-            <p className="text-sm text-muted-foreground mt-2">or drag and drop your file here</p>
+            <p className="text-sm text-muted-foreground mt-2">{t("or_drag_and_drop")}</p>
           </div>
-          <div className="text-sm text-muted-foreground">
-            <p>Example CSV format:</p>
-            <pre className="mt-2 p-2 bg-muted rounded-md overflow-x-auto">
-              SKU,Name,Barcode,Cost,Price,Type,Brand,Location,Current Quantity{"\n"}
-              {'SKU-001,"Product 1",123456,10.99,19.99,"Type A","Brand X","Default",100'}
+          <div>
+            <h3 className="text-sm font-medium mb-2 text-foreground">{t("example_csv_format")}</h3>
+            <pre className="p-3 bg-muted/50 rounded-lg text-xs overflow-x-auto whitespace-pre-wrap break-all">
+              <code className="text-muted-foreground">
+                SKU,Name,Barcode,Cost,Price,Type,Brand,Location,Current Quantity{"\n"}
+                {'SKU-001,"Product 1",123456,10.99,19.99,"Type A","Brand X","Default",100'}
+              </code>
             </pre>
           </div>
         </div>

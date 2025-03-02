@@ -16,6 +16,7 @@ import {
   ArrowUpFromLine,
   ArrowUpDown,
   MoveRight,
+  MoreVertical,
 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import FileSaver from "file-saver"
@@ -64,18 +65,17 @@ function TransactionItem({
   }
 
   return (
-    <div className="flex items-center justify-between py-3 border-b last:border-0">
-      <div className="flex items-start gap-3">
-        <div className="p-2 bg-muted rounded-full">{getIcon()}</div>
+    <div className="flex items-center justify-between py-2 border-b last:border-0">
+      <div className="flex items-start gap-2">
+        <div className="p-1 bg-muted rounded-full">{getIcon()}</div>
         <div>
-          <div className="font-medium">{type}</div>
-          <div className="text-sm text-muted-foreground">{format(new Date(date), "MMM dd, yyyy")}</div>
-          {memo && <div className="text-xs text-muted-foreground">{memo}</div>}
+          <div className="text-sm font-medium">{type}</div>
+          <div className="text-xs text-muted-foreground">{format(new Date(date), "MMM dd, yyyy")}</div>
         </div>
       </div>
       <div className="text-right">
-        <div className={cn("font-medium", getQuantityColor())}>{quantity > 0 ? `+${quantity}` : quantity}</div>
-        <div className="text-sm text-muted-foreground">{currentStock}</div>
+        <div className={cn("text-sm font-medium", getQuantityColor())}>{quantity > 0 ? `+${quantity}` : quantity}</div>
+        <div className="text-xs text-muted-foreground">{currentStock}</div>
       </div>
     </div>
   )
@@ -84,8 +84,8 @@ function TransactionItem({
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm font-medium text-muted-foreground">{label}</label>
-      <p className="text-foreground">{value}</p>
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <p className="text-sm text-foreground">{value}</p>
     </div>
   )
 }
@@ -220,7 +220,7 @@ export default function ItemDetails() {
       <MainNav onToggle={handleSidebarToggle} />
       <div className="flex-1 transition-all duration-300 ease-in-out" style={{ marginLeft: sidebarWidth }}>
         <div className="h-full flex flex-col">
-          <div className="border-b bg-card px-4 sm:px-6 py-4">
+          <div className="border-b bg-card px-4 py-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Link href="/" className="hover:text-foreground flex items-center gap-2">
@@ -235,23 +235,33 @@ export default function ItemDetails() {
                   <Edit className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Edit</span>
                 </Button>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Delete</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Duplicate
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
 
           <div className="flex-1 overflow-auto">
-            <div
-              className="max-w-full mx-auto p-4 sm:p-6 transition-all duration-300 ease-in-out"
-              style={{ maxWidth: `calc(100vw - ${sidebarWidth}px - 2rem)` }}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                <Card className="lg:col-span-2 p-4 sm:p-6 transition-all duration-300 hover:shadow-md">
-                  <h2 className="text-2xl font-semibold mb-6">Item Information</h2>
-                  <div className="grid gap-6 sm:grid-cols-2">
+            <div className="max-w-3xl mx-auto p-4 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                <Card className="md:col-span-2 p-4 sm:p-6">
+                  <h2 className="text-xl sm:text-2xl font-semibold mb-4">Item Information</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <InfoItem label="SKU" value={item.sku} />
                     <InfoItem label="Name" value={item.name} />
                     <InfoItem label="Barcode" value={item.barcode} />
@@ -264,10 +274,10 @@ export default function ItemDetails() {
                 </Card>
 
                 <div className="space-y-4 sm:space-y-6">
-                  <Card className="p-4 sm:p-6 transition-all duration-300 hover:shadow-md">
-                    <h2 className="text-2xl font-semibold mb-4">Current Status</h2>
-                    <div className="text-center mb-6">
-                      <div className="text-5xl font-bold text-[#9333E9]">{item.initial_quantity}</div>
+                  <Card className="p-4 sm:p-6">
+                    <h2 className="text-xl sm:text-2xl font-semibold mb-4">Current Status</h2>
+                    <div className="text-center mb-4">
+                      <div className="text-4xl sm:text-5xl font-bold text-[#9333E9]">{item.initial_quantity}</div>
                       <div className="text-sm text-muted-foreground mt-2">Available Stock</div>
                     </div>
                     <Tabs defaultValue="all" className="w-full">
@@ -275,12 +285,12 @@ export default function ItemDetails() {
                         <TabsTrigger value="all">All</TabsTrigger>
                         <TabsTrigger value="in">In</TabsTrigger>
                         <TabsTrigger value="out">Out</TabsTrigger>
-                        <TabsTrigger value="adjust">Adjust</TabsTrigger>
+                        <TabsTrigger value="adjust">Adj</TabsTrigger>
                         <TabsTrigger value="move">Move</TabsTrigger>
                       </TabsList>
                       {["all", "in", "out", "adjust", "move"].map((tab) => (
                         <TabsContent key={tab} value={tab} className="mt-4">
-                          <div className="space-y-1">
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
                             {filteredTransactions(tab).length > 0 ? (
                               filteredTransactions(tab).map((transaction, index) => (
                                 <TransactionItem
@@ -303,18 +313,17 @@ export default function ItemDetails() {
                     </Tabs>
                   </Card>
 
-                  <Card className="p-4 sm:p-6 transition-all duration-300 hover:shadow-md">
+                  <Card className="p-4 sm:p-6">
                     <h2 className="text-xl sm:text-2xl font-semibold mb-4">QR Code</h2>
                     <div className="flex flex-col items-center">
                       <div className="bg-white p-2 sm:p-4 rounded-lg shadow-inner">
-                        <QRCodeSVG value={qrCodeValue} size={150} ref={qrRef} />
+                        <QRCodeSVG value={qrCodeValue} size={120} ref={qrRef} />
                       </div>
-                      <div className="flex flex-col sm:flex-row gap-2 mt-4 w-full">
+                      <div className="flex flex-wrap justify-center gap-2 mt-4 w-full">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full sm:w-auto">
+                            <Button variant="outline" size="sm">
                               <Download className="h-4 w-4 sm:mr-2" />
-                              <span className="sm:hidden">Download</span>
                               <span className="hidden sm:inline">Download QR</span>
                             </Button>
                           </DropdownMenuTrigger>
@@ -323,9 +332,8 @@ export default function ItemDetails() {
                             <DropdownMenuItem onSelect={() => downloadQRCode("png")}>Download as PNG</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button variant="outline" onClick={() => window.print()} className="w-full sm:w-auto">
+                        <Button variant="outline" size="sm" onClick={() => window.print()}>
                           <Printer className="h-4 w-4 sm:mr-2" />
-                          <span className="sm:hidden">Print</span>
                           <span className="hidden sm:inline">Print QR</span>
                         </Button>
                       </div>

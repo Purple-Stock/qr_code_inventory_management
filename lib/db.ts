@@ -38,7 +38,7 @@ class InMemoryDB {
 
   private loadFromStorage() {
     if (typeof window !== "undefined") {
-      const savedData = localStorage.getItem("purple-stock-items")
+      const savedData = localStorage.getItem("purple-stock-data")
       if (savedData) {
         const data = JSON.parse(savedData)
         this.items = data.items
@@ -52,7 +52,7 @@ class InMemoryDB {
   private saveToStorage() {
     if (typeof window !== "undefined") {
       localStorage.setItem(
-        "purple-stock-items",
+        "purple-stock-data",
         JSON.stringify({
           items: this.items,
           stockIns: this.stockIns,

@@ -18,38 +18,71 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { duplicateItem, exportItemsToCSV } from "./actions"
+import { duplicateItem, exportItemsToCSV, insertDummyData, getItems, deleteItem } from "./actions"
 import { toast } from "@/components/ui/use-toast"
 import { CSVImport } from "@/components/csv-import"
-import { Download, FileSpreadsheet } from "lucide-react"
-import { getDb } from "@/lib/db"
+import { Download } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
+import type { Database } from "@/types/database"
+import { DeleteAlert } from "@/components/delete-alert"
+
+type Item = Database["public"]["Tables"]["items"]["Row"]
 
 export default function ItemList() {
-  const [items, setItems] = useState([])
-  const db = getDb()
+  const [items, setItems] = useState<Item[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<{ id: number; name: string } | null>(null)
+  const [isDuplicating, setIsDuplicating] = useState<number | null>(null)
+  const { t } = useLanguage()
+
+  const refreshItems = async () => {
+    try {
+      setIsLoading(true)
+      const fetchedItems = await getItems()
+      setItems(fetchedItems)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch items")
+      toast({
+        title: t("error"),
+        description: t("failed_to_fetch_items"),
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchItems() {
-      const fetchedItems = await db.getItems()
-      setItems(fetchedItems)
-    }
-    fetchItems()
+    refreshItems()
   }, [])
 
   const handleDuplicate = async (id: number) => {
-    const result = await duplicateItem(id)
-    if (result.success) {
+    try {
+      setIsDuplicating(id)
+      const result = await duplicateItem(id)
+      if (result.success) {
+        toast({
+          title: t("success"),
+          description: t("item_duplicated_successfully"),
+        })
+        refreshItems()
+      } else {
+        toast({
+          title: t("error"),
+          description: t("failed_to_duplicate_item"),
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
       toast({
-        title: "Success",
-        description: result.message,
-      })
-      setItems(await db.getItems()) // Refresh the item list
-    } else {
-      toast({
-        title: "Error",
-        description: result.message,
+        title: t("error"),
+        description: t("failed_to_duplicate_item"),
         variant: "destructive",
       })
+    } finally {
+      setIsDuplicating(null)
     }
   }
 
@@ -66,9 +99,41 @@ export default function ItemList() {
     document.body.removeChild(a)
   }
 
-  const refreshItems = async () => {
-    const fetchedItems = await db.getItems()
-    setItems(fetchedItems)
+  const handleInsertDummyData = async () => {
+    const result = await insertDummyData()
+    if (result.success) {
+      toast({
+        title: t("success"),
+        description: t("dummy_data_success"),
+      })
+      refreshItems()
+    } else {
+      toast({
+        title: t("error"),
+        description: t("dummy_data_error"),
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return
+
+    const result = await deleteItem(itemToDelete.id)
+    if (result.success) {
+      toast({
+        title: t("success"),
+        description: t("item_deleted_successfully"),
+      })
+      refreshItems()
+    } else {
+      toast({
+        title: t("error"),
+        description: t("failed_to_delete_item"),
+        variant: "destructive",
+      })
+    }
+    setItemToDelete(null)
   }
 
   return (
@@ -79,37 +144,40 @@ export default function ItemList() {
           <header className="bg-background border-b dark:border-gray-700">
             <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground">Purple Stock Item List</h1>
+                <h1 className="text-2xl font-bold text-foreground">{t("purple_stock_item_list")}</h1>
                 <div className="flex items-center space-x-2">
                   <Button variant="outline" size="sm" onClick={handleExportCsv}>
                     <Download className="h-4 w-4 mr-2" />
-                    Export CSV
+                    {t("export_csv")}
                   </Button>
                   <CSVImport onSuccess={refreshItems} />
                   <Button variant="outline" size="sm">
                     <QrCode className="h-4 w-4 mr-2" />
-                    Scan
+                    {t("scan")}
                   </Button>
                   <Button variant="default" size="sm" asChild>
                     <Link href="/new-item">
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Item
+                      {t("add_item")}
                     </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleInsertDummyData}>
+                    {t("insert_dummy_data")}
                   </Button>
                 </div>
               </div>
               <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Search items..." className="pl-10" />
+                  <Input placeholder={t("search_items")} className="pl-10" />
                 </div>
                 <div className="flex items-center gap-2">
                   <Select defaultValue="all">
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Categories" />
+                      <SelectValue placeholder={t("all_categories")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="all">{t("all_categories")}</SelectItem>
                       <SelectItem value="electronics">Electronics</SelectItem>
                       <SelectItem value="clothing">Clothing</SelectItem>
                       <SelectItem value="food">Food</SelectItem>
@@ -131,19 +199,31 @@ export default function ItemList() {
                     <TableHead className="w-12">
                       <Checkbox />
                     </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">In Stock</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead>{t("name")}</TableHead>
+                    <TableHead>{t("sku")}</TableHead>
+                    <TableHead>{t("category")}</TableHead>
+                    <TableHead className="text-right">{t("in_stock")}</TableHead>
+                    <TableHead className="text-right">{t("unit_price")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.length === 0 ? (
+                  {isLoading ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
-                        No items found. Add your first item to get started.
+                        {t("loading")}...
+                      </TableCell>
+                    </TableRow>
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-red-500">
+                        {error}
+                      </TableCell>
+                    </TableRow>
+                  ) : items.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        {t("no_items_found")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -159,7 +239,7 @@ export default function ItemList() {
                         </TableCell>
                         <TableCell>{item.sku}</TableCell>
                         <TableCell>{item.type}</TableCell>
-                        <TableCell className="text-right">{item.initial_quantity}</TableCell>
+                        <TableCell className="text-right">{item.current_quantity}</TableCell>
                         <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -169,10 +249,20 @@ export default function ItemList() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleDuplicate(item.id)}>Duplicate</DropdownMenuItem>
+                              <DropdownMenuItem>{t("edit")}</DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => handleDuplicate(item.id)}
+                                disabled={isDuplicating === item.id}
+                              >
+                                {isDuplicating === item.id ? t("duplicating") : t("duplicate")}
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onSelect={() => setItemToDelete({ id: item.id, name: item.name })}
+                              >
+                                {t("delete")}
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -186,19 +276,27 @@ export default function ItemList() {
 
           <footer className="bg-background border-t dark:border-gray-700 py-4 px-6">
             <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">Showing {items.length} items</p>
+              <p className="text-sm text-muted-foreground">
+                {t("showing_items").replace("{0}", items.length.toString())}
+              </p>
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm">
-                  Previous
+                  {t("previous")}
                 </Button>
                 <Button variant="outline" size="sm">
-                  Next
+                  {t("next")}
                 </Button>
               </div>
             </div>
           </footer>
         </div>
       </SidebarInset>
+      <DeleteAlert
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleDelete}
+        itemName={itemToDelete?.name || ""}
+      />
     </div>
   )
 }

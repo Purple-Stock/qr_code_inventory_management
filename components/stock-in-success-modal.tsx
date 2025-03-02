@@ -3,6 +3,7 @@
 import { CheckCircle2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useLanguage } from "@/contexts/language-context"
 
 interface StockInSuccessModalProps {
   isOpen: boolean
@@ -23,6 +24,8 @@ export function StockInSuccessModal({
   onViewDetails,
   onConfirm,
 }: StockInSuccessModalProps) {
+  const { t } = useLanguage()
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -33,23 +36,23 @@ export function StockInSuccessModal({
             onClick={onClose}
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t("close")}</span>
           </Button>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center space-y-4 py-4">
           <CheckCircle2 className="h-12 w-12 text-green-500" />
-          <DialogTitle className="text-xl font-semibold">Successfully recorded &apos;Stock In&apos;</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">{t("stock_in_success")}</DialogTitle>
           <p className="text-center text-muted-foreground">
-            Total {totalQuantity} quantity(ies) of {itemCount} item(s) has been recorded for &apos;Stock In&apos;
+            {t("stock_in_success_message", { totalQuantity, itemCount })}
           </p>
           <div className="flex gap-2 mt-4">
             <Button variant="outline" onClick={onPrintLabel}>
-              Print Label
+              {t("print_label")}
             </Button>
             <Button variant="outline" onClick={onViewDetails}>
-              Details
+              {t("details")}
             </Button>
-            <Button onClick={onConfirm}>Confirm</Button>
+            <Button onClick={onConfirm}>{t("confirm")}</Button>
           </div>
         </div>
       </DialogContent>

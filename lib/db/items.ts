@@ -41,6 +41,38 @@ export async function createItemInDb(data: {
   return newItem
 }
 
+export async function updateItemInDb(data: {
+  id: number
+  sku: string
+  name: string
+  barcode: string
+  cost: number
+  price: number
+  type: string
+  brand: string
+  location: string
+}) {
+  const { data: updatedItem, error } = await supabase
+    .from("items")
+    .update({
+      sku: data.sku,
+      name: data.name,
+      barcode: data.barcode,
+      cost: data.cost,
+      price: data.price,
+      type: data.type,
+      brand: data.brand,
+      location: data.location,
+    })
+    .eq("id", data.id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return updatedItem
+}
+
 export async function createStockTransaction(data: {
   item_id: number
   type: "stock_in" | "stock_out"

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import MainNav from "@/components/main-nav"
-import { Filter, Plus, QrCode, Search, ChevronDown } from "lucide-react"
+import { Filter, Plus, QrCode, Search, ChevronDown, Edit } from "lucide-react"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -144,7 +144,7 @@ export default function ItemList() {
           <header className="bg-background border-b dark:border-gray-700">
             <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-foreground">{t("purple_stock_item_list")}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{t("items_list")}</h1>
                 <div className="flex items-center space-x-2">
                   <Button variant="outline" size="sm" onClick={handleExportCsv}>
                     <Download className="h-4 w-4 mr-2" />
@@ -249,7 +249,12 @@ export default function ItemList() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>{t("edit")}</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/items/${item.id}/edit`}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  {t("edit")}
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onSelect={() => handleDuplicate(item.id)}
                                 disabled={isDuplicating === item.id}

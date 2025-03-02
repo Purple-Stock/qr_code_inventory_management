@@ -12,10 +12,11 @@ import {
   Download,
   Globe,
   LogOut,
+  MoveRight,
   Printer,
+  ArrowUpDown,
   Settings,
   ShoppingCart,
-  SlidersHorizontal,
   Upload,
 } from "lucide-react"
 
@@ -28,6 +29,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -37,6 +41,7 @@ import { useLanguage } from "@/contexts/language-context"
 export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) => void }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [sidebarWidth, setSidebarWidth] = React.useState(240)
+  const [openItems, setOpenItems] = React.useState<{ [key: string]: boolean }>({})
   const pathname = usePathname()
   const { language, setLanguage, t } = useLanguage()
 
@@ -48,7 +53,19 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
     { href: "/", icon: Box, label: "item_list" },
     { href: "/stock-in", icon: Download, label: "stock_in" },
     { href: "/stock-out", icon: Upload, label: "stock_out" },
-    { href: "/adjust", icon: SlidersHorizontal, label: "adjust" },
+    { href: "/adjust", icon: ArrowUpDown, label: "adjust_stock" },
+    { href: "/move-stock", icon: MoveRight, label: "move_stock" },
+    {
+      href: "#",
+      icon: BarChart,
+      label: "reports",
+      hasSubmenu: true,
+      submenuItems: [
+        { href: "/reports/summary", label: "summary" },
+        { href: "/reports/dashboard", label: "dashboard" },
+        { href: "/reports/analytics", label: "analytics" },
+      ],
+    },
     { href: "/transactions", icon: BarChart, label: "transactions" },
     { href: "#", icon: ShoppingCart, label: "purchase_sales", hasSubmenu: true },
     { href: "#", icon: Printer, label: "print_barcode", hasSubmenu: true },
@@ -64,31 +81,78 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
             isCollapsed ? "w-[60px]" : "w-[240px]",
           )}
         >
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupContent>
+          <SidebarContent className="p-0">
+            <SidebarGroup className="py-0">
+              <SidebarGroupContent className="gap-0">
                 <SidebarMenu>
                   {navItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href}
-                        className={cn(
-                          "w-full justify-start",
-                          pathname === item.href &&
-                            "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
-                        )}
-                      >
-                        <Link href={item.href} className="flex items-center gap-2 py-2">
-                          <item.icon className="h-4 w-4" />
-                          {!isCollapsed && (
-                            <>
-                              <span>{t(item.label)}</span>
-                              {item.hasSubmenu && <ChevronDown className="ml-auto h-4 w-4" />}
-                            </>
+                      {item.submenuItems ? (
+                        <SidebarMenuButton
+                          className={cn(
+                            "w-full justify-start",
+                            pathname.startsWith(item.href) &&
+                              "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
                           )}
-                        </Link>
-                      </SidebarMenuButton>
+                          data-state="closed"
+                        >
+                          <div
+                            className="flex items-center gap-2 py-2"
+                            onClick={() => {
+                              if (item.submenuItems) {
+                                setOpenItems((prev) => ({
+                                  ...prev,
+                                  [item.label]: !prev[item.label],
+                                }))
+                              }
+                            }}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            {!isCollapsed && (
+                              <>
+                                <span>{t(item.label)}</span>
+                                <ChevronDown
+                                  className={cn(
+                                    "ml-auto h-4 w-4 transition-transform duration-200",
+                                    openItems[item.label] && "transform rotate-180",
+                                  )}
+                                />
+                              </>
+                            )}
+                          </div>
+                        </SidebarMenuButton>
+                      ) : (
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname === item.href}
+                          className={cn(
+                            "w-full justify-start",
+                            pathname === item.href &&
+                              "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
+                          )}
+                        >
+                          <Link href={item.href} className="flex items-center gap-2 py-2">
+                            <item.icon className="h-4 w-4" />
+                            {!isCollapsed && (
+                              <>
+                                <span>{t(item.label)}</span>
+                                {item.hasSubmenu && <ChevronDown className="ml-auto h-4 w-4" />}
+                              </>
+                            )}
+                          </Link>
+                        </SidebarMenuButton>
+                      )}
+                      {item.submenuItems && !isCollapsed && openItems[item.label] && (
+                        <SidebarMenuSub>
+                          {item.submenuItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                              <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                                <Link href={subItem.href}>{t(subItem.label)}</Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      )}
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
@@ -139,7 +203,6 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
-      <div style={{ width: sidebarWidth }} />
     </>
   )
 }

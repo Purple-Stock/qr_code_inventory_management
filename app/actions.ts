@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createItemInDb, createStockTransaction, getItemById, searchItemsByQuery } from "@/lib/db/items"
+import { createItemInDb, createStockTransaction, getItemById, searchItemsByQuery, updateItemInDb } from "@/lib/db/items"
 import { supabase } from "@/lib/supabase"
 import { parseCsvContent, generateCsv } from "@/lib/csv"
 import type { Database } from "@/types/database"
@@ -345,6 +345,110 @@ export async function createStockAdjustment(formData: FormData) {
   } catch (error) {
     console.error("Error creating stock adjustment:", error)
     return { success: false, message: "Error creating stock adjustment" }
+  }
+}
+
+export async function updateItem(formData: FormData) {
+  try {
+    // Validate required fields
+    const id = formData.get("id") as string
+    const sku = formData.get("sku") as string
+    const name = formData.get("name") as string
+    const barcode = formData.get("barcode") as string
+    const costStr = formData.get("cost") as string
+    const priceStr = formData.get("price") as string
+    const type = formData.get("type") as string
+    const brand = formData.get("brand") as string
+    const location = formData.get("location") as string
+
+    if (!id || !sku || !name) {
+      return { success: false, message: "ID, SKU and Name are required fields" }
+    }
+
+    // Parse and validate numeric fields
+    const cost = costStr ? Number.parseFloat(costStr) : 0
+    const price = priceStr ? Number.parseFloat(priceStr) : 0
+
+    if (isNaN(cost) || isNaN(price)) {
+      return { success: false, message: "Invalid numeric values provided" }
+    }
+
+    const updatedItem = await updateItemInDb({
+      id: Number(id),
+      sku,
+      name,
+      barcode: barcode || "",
+      cost,
+      price,
+      type: type || "",
+      brand: brand || "",
+      location: location || "default",
+    })
+
+    revalidatePath("/")
+    return { success: true, message: "Item updated successfully", item: updatedItem }
+  } catch (error) {
+    console.error("Error updating item:", error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "An unexpected error occurred",
+    }
+  }
+}
+
+export async function createStockMove(formData: FormData) {
+  try {
+    const fromLocation = formData.get("from_location") as string
+    const toLocation = formData.get("to_location") as string
+    const memo = formData.get("memo") as string
+    const items = JSON.parse(formData.get("items") as string)
+
+    // Validate required fields
+    if (!fromLocation || !toLocation || !items?.length) {
+      return { success: false, message: "From location, to location, and items are required" }
+    }
+
+    if (fromLocation === toLocation) {
+      return { success: false, message: "From and To locations must be different" }
+    }
+
+    // Validate stock availability
+    for (const item of items) {
+      const currentItem = await getItemById(item.itemId)
+      if (!currentItem || currentItem.current_quantity < item.quantity) {
+        return {
+          success: false,
+          message: `Insufficient stock for item ${currentItem?.name || item.itemId}`,
+        }
+      }
+    }
+
+    // Process each item
+    for (const item of items) {
+      // Create stock out transaction from source location
+      await createStockTransaction({
+        item_id: item.itemId,
+        type: "stock_out",
+        quantity: item.quantity,
+        location: fromLocation,
+        memo: `Move to ${toLocation}: ${memo}`,
+      })
+
+      // Create stock in transaction at destination location
+      await createStockTransaction({
+        item_id: item.itemId,
+        type: "stock_in",
+        quantity: item.quantity,
+        location: toLocation,
+        memo: `Move from ${fromLocation}: ${memo}`,
+      })
+    }
+
+    revalidatePath("/")
+    return { success: true, message: "Stock moved successfully" }
+  } catch (error) {
+    console.error("Error moving stock:", error)
+    return { success: false, message: "Error moving stock" }
   }
 }
 

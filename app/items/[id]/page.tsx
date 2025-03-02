@@ -8,7 +8,6 @@ import {
   Copy,
   Edit,
   Trash2,
-  Files,
   Download,
   Printer,
   ChevronDown,
@@ -17,6 +16,7 @@ import {
   ArrowUpDown,
   MoveRight,
   MoreVertical,
+  Package,
 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import FileSaver from "file-saver"
@@ -29,6 +29,7 @@ import { getItem } from "@/app/actions"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "next-i18next"
 
 function TransactionItem({
   type,
@@ -96,6 +97,7 @@ export default function ItemDetails() {
   const [error, setError] = useState<string | null>(null)
   const qrRef = useRef<SVGSVGElement>(null)
   const [sidebarWidth, setSidebarWidth] = useState(240)
+  const { t } = useTranslation("common")
 
   useEffect(() => {
     async function fetchItem() {
@@ -256,20 +258,67 @@ export default function ItemDetails() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto">
-            <div className="max-w-3xl mx-auto p-4 sm:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                <Card className="md:col-span-2 p-4 sm:p-6">
-                  <h2 className="text-xl sm:text-2xl font-semibold mb-4">Item Information</h2>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <InfoItem label="SKU" value={item.sku} />
-                    <InfoItem label="Name" value={item.name} />
-                    <InfoItem label="Barcode" value={item.barcode} />
-                    <InfoItem label="Cost" value={`$${item.cost.toFixed(2)}`} />
-                    <InfoItem label="Price" value={`$${item.price.toFixed(2)}`} />
-                    <InfoItem label="Type" value={item.type} />
-                    <InfoItem label="Brand" value={item.brand} />
-                    <InfoItem label="Location" value={item.location || "N/A"} />
+          <div className="flex-1 overflow-auto bg-muted/10">
+            <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 p-6 hover-shadow-effect">
+                  <h2 className="text-xl sm:text-2xl font-semibold mb-6 flex items-center text-purple-600">
+                    <Package className="h-6 w-6 mr-2" />
+                    {t("item_information")}
+                  </h2>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("sku")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.sku}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("name")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.name}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("barcode")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.barcode}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("cost")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md text-green-600">
+                        ${item.cost.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("price")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md text-purple-600">
+                        ${item.price.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("type")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.type}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("brand")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.brand}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {t("location")}
+                      </label>
+                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.location || "N/A"}</p>
+                    </div>
                   </div>
                 </Card>
 

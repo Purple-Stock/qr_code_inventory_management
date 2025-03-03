@@ -25,65 +25,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-
-// Mock data - replace with actual API calls in production
-const mockData = {
-  inventoryTrends: [
-    { month: "Jan", inStock: 1200, lowStock: 150, outOfStock: 50 },
-    { month: "Feb", inStock: 1400, lowStock: 120, outOfStock: 45 },
-    { month: "Mar", inStock: 1300, lowStock: 180, outOfStock: 60 },
-    { month: "Apr", inStock: 1700, lowStock: 160, outOfStock: 40 },
-    { month: "May", inStock: 1600, lowStock: 140, outOfStock: 35 },
-    { month: "Jun", inStock: 1800, lowStock: 130, outOfStock: 30 },
-  ],
-  categoryDistribution: [
-    { name: "Electronics", value: 400 },
-    { name: "Clothing", value: 300 },
-    { name: "Food", value: 200 },
-    { name: "Books", value: 150 },
-    { name: "Others", value: 100 },
-  ],
-  locationData: [
-    { location: "Warehouse A", total: 800 },
-    { location: "Store 1", total: 400 },
-    { location: "Store 2", total: 300 },
-    { location: "Store 3", total: 200 },
-  ],
-  recentTransactions: [
-    {
-      id: 1,
-      type: "stock_in",
-      item: "iPhone 14 Pro",
-      quantity: 50,
-      location: "Warehouse A",
-      date: "2025-03-02",
-    },
-    {
-      id: 2,
-      type: "stock_out",
-      item: "MacBook Pro",
-      quantity: -20,
-      location: "Store 1",
-      date: "2025-03-02",
-    },
-    {
-      id: 3,
-      type: "adjustment",
-      item: "AirPods Pro",
-      quantity: -5,
-      location: "Store 2",
-      date: "2025-03-01",
-    },
-    {
-      id: 4,
-      type: "stock_in",
-      item: "iPad Pro",
-      quantity: 30,
-      location: "Warehouse A",
-      date: "2025-03-01",
-    },
-  ],
-}
+import { getInventoryTrends, getCategoryDistribution, getLocationData, getRecentTransactions } from "./actions"
 
 const COLORS = ["#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981"]
 
@@ -91,6 +33,53 @@ export default function DashboardPage() {
   const { t } = useLanguage()
   const router = useRouter()
   const [timeRange, setTimeRange] = React.useState("7d")
+  const [inventoryTrends, setInventoryTrends] = React.useState([])
+  const [categoryDistribution, setCategoryDistribution] = React.useState([])
+  const [locationData, setLocationData] = React.useState([])
+  const [recentTransactions, setRecentTransactions] = React.useState([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const [trends, categories, locations, transactions] = await Promise.all([
+        getInventoryTrends(timeRange),
+        getCategoryDistribution(),
+        getLocationData(),
+        getRecentTransactions(),
+      ])
+
+      setInventoryTrends(trends)
+      setCategoryDistribution(categories)
+      setLocationData(locations)
+      setRecentTransactions(transactions)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while fetching data")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [timeRange])
+
+  React.useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-gray-900">{t("error_occurred")}</h2>
+          <p className="mt-2 text-gray-500">{error}</p>
+          <Button className="mt-4" onClick={() => fetchData()}>
+            {t("try_again")}
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <SidebarProvider>
@@ -133,7 +122,7 @@ export default function DashboardPage() {
                   <CardContent>
                     <div className="h-[400px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={mockData.inventoryTrends}>
+                        <LineChart data={inventoryTrends}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="month" />
                           <YAxis />
@@ -178,7 +167,7 @@ export default function DashboardPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
-                              data={mockData.categoryDistribution}
+                              data={categoryDistribution}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -187,7 +176,7 @@ export default function DashboardPage() {
                               fill="#8884d8"
                               dataKey="value"
                             >
-                              {mockData.categoryDistribution.map((entry, index) => (
+                              {categoryDistribution.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -208,7 +197,7 @@ export default function DashboardPage() {
                     <CardContent>
                       <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={mockData.locationData}>
+                          <BarChart data={locationData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="location" />
                             <YAxis />
@@ -239,7 +228,7 @@ export default function DashboardPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockData.recentTransactions.map((transaction) => (
+                        {recentTransactions.map((transaction) => (
                           <TableRow key={transaction.id}>
                             <TableCell>
                               <span

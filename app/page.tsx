@@ -18,7 +18,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { duplicateItem, exportItemsToCSV, getItems, deleteItem, insertDummyData, getCategories } from "./actions"
+import {
+  duplicateItem,
+  exportItemsToCSV,
+  getItems,
+  deleteItem,
+  insertDummyData,
+  getCategories,
+  getLocations,
+} from "./actions"
 import { toast } from "@/components/ui/use-toast"
 import { CSVImport } from "@/components/csv-import"
 import { Download } from "lucide-react"
@@ -28,11 +36,14 @@ import { DeleteAlert } from "@/components/delete-alert"
 
 type Item = Database["public"]["Tables"]["items"]["Row"]
 type Category = Database["public"]["Tables"]["categories"]["Row"]
+type Location = Database["public"]["Tables"]["locations"]["Row"]
 
 export default function ItemList() {
   const [items, setItems] = useState<Item[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedLocation, setSelectedLocation] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{ id: number; name: string } | null>(null)
@@ -66,9 +77,19 @@ export default function ItemList() {
     }
   }
 
+  const loadLocations = async () => {
+    try {
+      const fetchedLocations = await getLocations()
+      setLocations(fetchedLocations)
+    } catch (err) {
+      console.error("Failed to fetch locations:", err)
+    }
+  }
+
   useEffect(() => {
     refreshItems()
     loadCategories()
+    loadLocations()
   }, [])
 
   const handleDuplicate = async (id: number) => {
@@ -112,23 +133,6 @@ export default function ItemList() {
     document.body.removeChild(a)
   }
 
-  const handleInsertDummyData = async () => {
-    const result = await insertDummyData()
-    if (result.success) {
-      toast({
-        title: t("success"),
-        description: t("dummy_data_success"),
-      })
-      refreshItems()
-    } else {
-      toast({
-        title: t("error"),
-        description: t("dummy_data_error"),
-        variant: "destructive",
-      })
-    }
-  }
-
   const handleDelete = async () => {
     if (!itemToDelete) return
 
@@ -149,8 +153,28 @@ export default function ItemList() {
     setItemToDelete(null)
   }
 
-  const filteredItems =
-    selectedCategory === "all" ? items : items.filter((item) => item.category_id === Number(selectedCategory))
+  const getItemQuantityForLocation = (item: any, locationId: string | null) => {
+    if (!item.item_locations) return 0
+
+    if (locationId === "all") {
+      // Sum quantities from all locations
+      return item.item_locations.reduce((total: number, loc: any) => total + (loc.current_quantity || 0), 0)
+    }
+
+    // Find quantity for specific location
+    const locationStock = item.item_locations.find((loc: any) => loc.location_id === Number.parseInt(locationId))
+    return locationStock?.current_quantity || 0
+  }
+
+  const filteredItems = items
+    .filter((item) => {
+      if (selectedCategory === "all") return true
+      return item.category_id === Number.parseInt(selectedCategory)
+    })
+    .map((item) => ({
+      ...item,
+      displayQuantity: getItemQuantityForLocation(item, selectedLocation),
+    }))
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -220,6 +244,19 @@ export default function ItemList() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder={t("all_locations")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("all_locations")}</SelectItem>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id.toString()}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button variant="outline" size="icon">
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -276,7 +313,16 @@ export default function ItemList() {
                         </TableCell>
                         <TableCell>{item.sku}</TableCell>
                         <TableCell>{item.categories?.name || "-"}</TableCell>
-                        <TableCell className="text-right">{item.current_quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {selectedLocation === "all" ? (
+                            <div className="space-y-1">
+                              <div>{item.displayQuantity}</div>
+                              <div className="text-sm text-muted-foreground">{t("total_in_stock")}</div>
+                            </div>
+                          ) : (
+                            item.displayQuantity
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
                         <TableCell>
                           <DropdownMenu>

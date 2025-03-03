@@ -221,6 +221,7 @@ export async function searchItems(query: string) {
 
 export async function getItems() {
   try {
+    // First get all items with their locations and transactions
     const { data: items, error } = await supabase
       .from("items")
       .select(`
@@ -228,13 +229,79 @@ export async function getItems() {
         categories:category_id (
           id,
           name
+        ),
+        item_locations (
+          location_id,
+          current_quantity
+        ),
+        stock_transactions (
+          id,
+          type,
+          quantity,
+          from_location_id,
+          to_location_id,
+          created_at
         )
       `)
       .order("created_at", { ascending: false })
 
     if (error) throw error
 
-    return items
+    // Process each item to calculate correct quantities per location
+    const processedItems = items.map((item) => {
+      const locationQuantities = new Map()
+
+      // Sort transactions by creation date to process them in order
+      const sortedTransactions = [...item.stock_transactions].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      )
+
+      // Process each transaction to build location quantities
+      sortedTransactions.forEach((transaction) => {
+        switch (transaction.type) {
+          case "stock_in":
+            // Add to destination location
+            const currentToQty = locationQuantities.get(transaction.to_location_id) || 0
+            locationQuantities.set(transaction.to_location_id, currentToQty + transaction.quantity)
+            break
+
+          case "stock_out":
+            // Subtract from source location
+            const currentFromQty = locationQuantities.get(transaction.from_location_id) || 0
+            locationQuantities.set(transaction.from_location_id, currentFromQty - transaction.quantity)
+            break
+
+          case "move":
+            // Subtract from source location
+            const sourceQty = locationQuantities.get(transaction.from_location_id) || 0
+            locationQuantities.set(transaction.from_location_id, sourceQty - transaction.quantity)
+            // Add to destination location
+            const destQty = locationQuantities.get(transaction.to_location_id) || 0
+            locationQuantities.set(transaction.to_location_id, destQty + transaction.quantity)
+            break
+
+          case "adjust":
+            // Set exact quantity for location
+            locationQuantities.set(transaction.to_location_id, transaction.quantity)
+            break
+        }
+      })
+
+      // Convert the Map to array of location quantities
+      const calculatedLocations = Array.from(locationQuantities.entries()).map(([location_id, current_quantity]) => ({
+        location_id,
+        current_quantity,
+      }))
+
+      return {
+        ...item,
+        item_locations: calculatedLocations,
+        // Calculate total quantity across all locations
+        current_quantity: calculatedLocations.reduce((sum, loc) => sum + loc.current_quantity, 0),
+      }
+    })
+
+    return processedItems
   } catch (error) {
     console.error("Error getting items:", error)
     return []

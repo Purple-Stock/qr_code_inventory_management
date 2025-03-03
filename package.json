@@ -60,12 +60,9 @@
     "zod": "^3.24.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "i18next": "latest",
-    "react-i18next": "latest",
     "@supabase/supabase-js": "latest",
     "qrcode.react": "latest",
-    "file-saver": "latest",
-    "next-i18next": "latest"
+    "file-saver": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

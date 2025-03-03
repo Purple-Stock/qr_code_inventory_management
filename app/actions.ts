@@ -179,7 +179,7 @@ export async function createStockOut(formData: FormData) {
         .from("item_locations")
         .select("current_quantity")
         .eq("item_id", item.itemId)
-        .eq("location_id", location_id)
+        .eq("location_id", item.location_id || location_id)
         .single()
 
       if (!locationStock || locationStock.current_quantity < item.quantity) {
@@ -196,7 +196,7 @@ export async function createStockOut(formData: FormData) {
         item_id: item.itemId,
         type: "stock_out",
         quantity: item.quantity,
-        from_location_id: Number(location_id),
+        from_location_id: Number(item.location_id || location_id),
         memo,
       })
     }
@@ -507,7 +507,7 @@ export async function createStockAdjustment(formData: FormData) {
         item_id: item.itemId,
         type: "adjust",
         quantity: item.quantity,
-        to_location_id: Number(location_id), // Use to_location_id instead of location
+        to_location_id: Number(location_id),
         memo,
       })
     }

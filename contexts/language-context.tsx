@@ -334,6 +334,18 @@ const translations = {
     select_location: "Select Location",
     install_app: "Install App",
     error_loading_metrics: "Error loading metrics",
+    // QR Scanner
+    scan_qr_code: "Scan QR Code",
+    scan_qr_code_description: "Position the QR code within the frame to scan",
+    start_scanning: "Start Scanning",
+    invalid_qr_code: "Invalid QR code",
+    scan_to_add: "Scan to add item",
+    scanning_in_progress: "Scanning in progress...",
+    // Item Modal
+    update_item_details: "Update item details",
+    new_quantity: "New quantity",
+    adjusting: "Adjusting...",
+    view_details: "View Details",
   },
   pt: {
     // Sidebar items
@@ -658,6 +670,18 @@ const translations = {
     select_location: "Selecionar Localização",
     install_app: "Instalar App",
     error_loading_metrics: "Erro ao carregar métricas",
+    // QR Scanner
+    scan_qr_code: "Escanear Código QR",
+    scan_qr_code_description: "Posicione o código QR dentro da moldura para escanear",
+    start_scanning: "Iniciar Escaneamento",
+    invalid_qr_code: "Código QR inválido",
+    scan_to_add: "Escanear para adicionar item",
+    scanning_in_progress: "Escaneamento em progresso...",
+    // Item Modal
+    update_item_details: "Atualizar detalhes do item",
+    new_quantity: "Nova quantidade",
+    adjusting: "Ajustando...",
+    view_details: "Ver Detalhes",
   },
 }
 

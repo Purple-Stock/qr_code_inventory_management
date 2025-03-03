@@ -127,31 +127,46 @@ export interface Database {
           id: number
           created_at: string
           item_id: number
-          type: "stock_in" | "stock_out" | "adjust"
+          type: "stock_in" | "stock_out" | "adjust" | "move"
           quantity: number
           memo: string | null
           location: string
           supplier: string | null
+          from_location_id: number | null
+          to_location_id: number | null
+          unit_cost: number | null
+          total_cost: number | null
+          supplier_id: number | null
         }
         Insert: {
           id?: number
           created_at?: string
           item_id: number
-          type: "stock_in" | "stock_out" | "adjust"
+          type: "stock_in" | "stock_out" | "adjust" | "move"
           quantity: number
           memo?: string | null
           location: string
           supplier?: string | null
+          from_location_id?: number | null
+          to_location_id?: number | null
+          unit_cost?: number | null
+          total_cost?: number | null
+          supplier_id?: number | null
         }
         Update: {
           id?: number
           created_at?: string
           item_id?: number
-          type?: "stock_in" | "stock_out" | "adjust"
+          type?: "stock_in" | "stock_out" | "adjust" | "move"
           quantity?: number
           memo?: string | null
           location?: string
           supplier?: string | null
+          from_location_id?: number | null
+          to_location_id?: number | null
+          unit_cost?: number | null
+          total_cost?: number | null
+          supplier_id?: number | null
         }
       }
       item_locations: {
@@ -218,4 +233,5 @@ export interface Database {
     }
   }
 }
+export type Location = Database["public"]["Tables"]["locations"]["Row"]
 

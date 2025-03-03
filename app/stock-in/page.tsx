@@ -15,12 +15,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { createStockIn, searchItems, getLocations, getSuppliers } from "../actions"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, FileSpreadsheet, QrCode } from "lucide-react"
+import { Plus, FileSpreadsheet } from "lucide-react"
 import { CSVImport } from "@/components/csv-import"
 import { StockInSuccessModal } from "@/components/stock-in-success-modal"
 import { StockInDetails } from "@/components/stock-in-details"
 import { useLanguage } from "@/contexts/language-context"
 import type { Database } from "@/types/database"
+import { ScanButton } from "@/components/scan-button"
 
 type Location = Database["public"]["Tables"]["locations"]["Row"]
 type Supplier = Database["public"]["Tables"]["suppliers"]["Row"]
@@ -270,10 +271,31 @@ export default function StockIn() {
                             </Button>
                           }
                         />
-                        <Button type="button" variant="outline" size="sm">
-                          <QrCode className="h-4 w-4 mr-2" />
-                          {t("scan_barcode")}
-                        </Button>
+                        <ScanButton
+                          mode="stock_in"
+                          locations={locations}
+                          onSubmit={async (data) => {
+                            // Handle the scanned item data
+                            const formData = new FormData()
+                            formData.append("location_id", data.toLocation)
+                            formData.append("date", new Date().toISOString().split("T")[0])
+                            formData.append(
+                              "items",
+                              JSON.stringify([
+                                {
+                                  itemId: data.itemId,
+                                  quantity: data.quantity,
+                                  location_id: Number(data.toLocation),
+                                },
+                              ]),
+                            )
+
+                            const result = await createStockIn(formData)
+                            if (!result.success) {
+                              throw new Error(result.message)
+                            }
+                          }}
+                        />
                       </div>
                     </div>
 

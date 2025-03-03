@@ -15,12 +15,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { createStockOut, searchItems, getLocations } from "../actions"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, FileSpreadsheet, QrCode, Search } from "lucide-react"
+import { Plus, FileSpreadsheet, Search } from "lucide-react"
 import { CSVImport } from "@/components/csv-import"
 import { StockOutSuccessModal } from "@/components/stock-out-success-modal"
 import { StockOutDetails } from "@/components/stock-out-details"
 import { useLanguage } from "@/contexts/language-context"
 import type { Database } from "@/types/database"
+import { ScanButton } from "@/components/scan-button"
 
 type Location = Database["public"]["Tables"]["locations"]["Row"]
 
@@ -259,10 +260,74 @@ export default function StockOut() {
                             </Button>
                           }
                         />
-                        <Button type="button" variant="outline" size="sm">
-                          <QrCode className="h-4 w-4 mr-2" />
-                          {t("scan_barcode")}
-                        </Button>
+                        <ScanButton
+                          mode="stock_out"
+                          locations={locations}
+                          onSubmit={async (data) => {
+                            if (!selectedLocation) {
+                              toast({
+                                title: t("error"),
+                                description: t("location_required"),
+                                variant: "destructive",
+                              })
+                              return
+                            }
+
+                            try {
+                              const formData = new FormData()
+                              formData.append("location_id", data.fromLocation)
+                              formData.append("date", date)
+                              formData.append("memo", "Scanned item stock out")
+                              formData.append(
+                                "items",
+                                JSON.stringify([
+                                  {
+                                    itemId: data.itemId,
+                                    quantity: data.quantity,
+                                    location_id: Number(data.fromLocation),
+                                  },
+                                ]),
+                              )
+
+                              const result = await createStockOut(formData)
+
+                              if (result.success) {
+                                toast({
+                                  title: t("success"),
+                                  description: t("stock_out_created"),
+                                })
+
+                                // Add item to the list
+                                const scannedItem = {
+                                  itemId: data.itemId,
+                                  name: data.item.name,
+                                  sku: data.item.sku,
+                                  currentStock:
+                                    data.item.item_locations?.find(
+                                      (loc) => loc.location_id === Number(data.fromLocation),
+                                    )?.current_quantity || 0,
+                                  quantity: data.quantity,
+                                  location_id: Number(data.fromLocation),
+                                }
+
+                                setItems((prevItems) => [...prevItems, scannedItem])
+                              } else {
+                                toast({
+                                  title: t("error"),
+                                  description: result.message,
+                                  variant: "destructive",
+                                })
+                              }
+                            } catch (error) {
+                              console.error("Error processing stock out:", error)
+                              toast({
+                                title: t("error"),
+                                description: t("failed_to_process_stock_out"),
+                                variant: "destructive",
+                              })
+                            }
+                          }}
+                        />
                       </div>
                     </div>
 

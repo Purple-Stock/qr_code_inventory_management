@@ -19,6 +19,7 @@ import { Plus, FileSpreadsheet, QrCode, Search } from "lucide-react"
 import { CSVImport } from "@/components/csv-import"
 import { AdjustSuccessModal } from "@/components/adjust-success-modal"
 import { AdjustDetails } from "@/components/adjust-details"
+import { ScanButton } from "@/components/scan-button"
 import { useLanguage } from "@/contexts/language-context"
 import type { Database } from "@/types/database"
 
@@ -95,13 +96,68 @@ export default function Adjust() {
           name: item.name,
           sku: item.sku,
           currentStock: item.current_quantity || 0,
-          quantity: item.current_quantity || 0, // Ensure quantity is never undefined
+          quantity: item.current_quantity || 0,
           location_id: Number(selectedLocation),
         },
       ])
     }
     setSearchQuery("")
     setSearchResults([])
+  }
+
+  const handleScannedItem = async (data: any) => {
+    if (!selectedLocation) {
+      toast({
+        title: t("error"),
+        description: t("location_required"),
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      // Create FormData with the same structure as the main form
+      const formData = new FormData()
+      formData.append("location_id", selectedLocation)
+      formData.append("date", date)
+      formData.append("memo", "Scanned adjustment")
+
+      const adjustItems = [
+        {
+          itemId: data.itemId,
+          quantity: data.quantity,
+          location_id: Number(selectedLocation),
+        },
+      ]
+
+      formData.append("items", JSON.stringify(adjustItems))
+
+      // Use the same action as the main form
+      const result = await createStockAdjustment(formData)
+
+      if (result.success) {
+        toast({
+          title: t("success"),
+          description: t("item_adjusted"),
+        })
+
+        // Refresh the page to show updated quantities
+        router.refresh()
+      } else {
+        toast({
+          title: t("error"),
+          description: result.message || t("failed_to_adjust_item"),
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error adjusting item:", error)
+      toast({
+        title: t("error"),
+        description: t("failed_to_adjust_item"),
+        variant: "destructive",
+      })
+    }
   }
 
   const handleQuantityChange = (itemId: number, quantity: number) => {
@@ -129,7 +185,7 @@ export default function Adjust() {
     const adjustItems = items.map((item) => ({
       itemId: item.itemId,
       quantity: item.quantity,
-      location_id: item.location_id,
+      location_id: Number(selectedLocation),
     }))
 
     const formData = new FormData()
@@ -245,10 +301,17 @@ export default function Adjust() {
                             </Button>
                           }
                         />
-                        <Button type="button" variant="outline" size="sm">
-                          <QrCode className="h-4 w-4 mr-2" />
-                          {t("scan_barcode")}
-                        </Button>
+                        <ScanButton
+                          mode="adjust"
+                          locations={locations}
+                          onSubmit={handleScannedItem}
+                          trigger={
+                            <Button type="button" variant="outline" size="sm">
+                              <QrCode className="h-4 w-4 mr-2" />
+                              {t("scan_barcode")}
+                            </Button>
+                          }
+                        />
                       </div>
                     </div>
 
@@ -309,7 +372,7 @@ export default function Adjust() {
                                   <Input
                                     type="number"
                                     min="0"
-                                    value={item.quantity || 0} // Ensure value is never undefined
+                                    value={item.quantity || 0}
                                     onChange={(e) => handleQuantityChange(item.itemId, Number(e.target.value))}
                                     className="w-20 ml-auto"
                                   />

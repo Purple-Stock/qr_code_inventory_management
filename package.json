@@ -62,7 +62,8 @@
     "@types/react-dom": "latest",
     "@supabase/supabase-js": "latest",
     "qrcode.react": "latest",
-    "file-saver": "latest"
+    "file-saver": "latest",
+    "html5-qrcode": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

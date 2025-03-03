@@ -89,7 +89,16 @@ export async function createStockTransaction(data: StockTransactionInput) {
   if (transactionError) throw transactionError
 
   // Update item_locations table
-  if (data.type === "stock_in" && data.to_location_id) {
+  if (data.type === "adjust" && data.to_location_id) {
+    // For adjust, directly set the new quantity
+    const { error: updateError } = await supabase.from("item_locations").upsert({
+      item_id: data.item_id,
+      location_id: data.to_location_id,
+      current_quantity: data.quantity,
+    })
+
+    if (updateError) throw updateError
+  } else if (data.type === "stock_in" && data.to_location_id) {
     // For stock in, first try to update existing record
     const { data: existingLocation, error: selectError } = await supabase
       .from("item_locations")
@@ -146,35 +155,29 @@ export async function createStockTransaction(data: StockTransactionInput) {
       .eq("location_id", data.from_location_id)
 
     if (updateError) throw updateError
-  } else if (data.type === "adjust" && data.to_location_id) {
-    // For adjust, directly set the new quantity
-    const { error: updateError } = await supabase.from("item_locations").upsert({
-      item_id: data.item_id,
-      location_id: data.to_location_id,
-      current_quantity: data.quantity,
-    })
-
-    if (updateError) throw updateError
   }
 }
 
 export async function getItemById(id: number) {
   const { data, error } = await supabase
     .from("items")
-    .select(
-      `
+    .select(`
       *,
       stock_transactions (
         id,
         created_at,
         type,
         quantity,
-        location,
-        supplier,
+        from_location_id,
+        to_location_id,
+        supplier_id,
         memo
+      ),
+      item_locations (
+        location_id,
+        current_quantity
       )
-    `,
-    )
+    `)
     .eq("id", id)
     .single()
 

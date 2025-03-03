@@ -318,7 +318,7 @@ export default function ItemDetails() {
     )
   }
 
-  const qrCodeValue = `https://purplestock.com/items/${item.id}`
+  const qrCodeValue = `${window.location.origin}/items/${item.id}`
 
   const downloadQRCode = (format: "svg" | "png") => {
     if (qrRef.current) {

@@ -35,8 +35,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
+    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor.light },
+    { media: "(prefers-color-scheme: dark)", color: siteConfig.themeColor.dark },
   ],
   width: "device-width",
   initialScale: 1,
@@ -57,9 +57,17 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <meta name="apple-mobile-web-app-title" content={siteConfig.name} />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#7c3aed" />
+        <meta name="theme-color" content={siteConfig.themeColor.light} />
       </head>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
+      <body
+        className={cn(
+          "min-h-screen font-sans antialiased",
+          "bg-gradient-to-b from-background to-background/80",
+          "dark:from-background dark:to-background/50",
+          fontSans.variable,
+        )}
+      >
+        <div className="fixed inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <LanguageProvider>
             <SidebarProvider>

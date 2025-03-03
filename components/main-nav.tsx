@@ -101,9 +101,8 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
                 {item.submenuItems ? (
                   <SidebarMenuButton
                     className={cn(
-                      "w-full justify-start",
-                      pathname.startsWith(item.href) &&
-                        "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
+                      "w-full justify-start transition-colors",
+                      pathname.startsWith(item.href) && "bg-primary/10 text-primary dark:bg-primary/20",
                     )}
                     data-state="closed"
                   >
@@ -137,8 +136,8 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
                     asChild
                     isActive={pathname === item.href}
                     className={cn(
-                      "w-full justify-start",
-                      pathname === item.href && "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
+                      "w-full justify-start transition-colors hover:bg-primary/10",
+                      pathname === item.href && "bg-primary/10 text-primary dark:bg-primary/20",
                     )}
                   >
                     <Link
@@ -163,6 +162,7 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
                         <SidebarMenuSubButton
                           asChild
                           isActive={pathname === subItem.href}
+                          className="hover:bg-primary/5 transition-colors"
                           onClick={() => setIsMobileOpen(false)}
                         >
                           <Link href={subItem.href}>{t(subItem.label)}</Link>
@@ -184,9 +184,12 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
       <div className="flex items-center gap-2 p-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full flex items-center gap-2 justify-start hover:bg-muted/50">
-              <Avatar className="h-8 w-8 bg-purple-600">
-                <AvatarFallback>M</AvatarFallback>
+            <Button
+              variant="ghost"
+              className="w-full flex items-center gap-2 justify-start hover:bg-primary/10 transition-colors"
+            >
+              <Avatar className="h-8 w-8 bg-primary/20 ring-2 ring-primary/20">
+                <AvatarFallback className="text-primary">M</AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left">
                 <p className="text-sm font-medium">Matheus Puppe</p>
@@ -200,7 +203,7 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
           <DropdownMenuContent align="start" className="w-[200px]">
             <DropdownMenuItem onClick={() => setLanguage("en")}>English</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setLanguage("pt")}>Português</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem className="text-destructive">
               <LogOut className="h-4 w-4 mr-2" />
               {t("logout")}
             </DropdownMenuItem>
@@ -216,7 +219,7 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
       <div className="relative hidden md:block">
         <Sidebar
           className={cn(
-            "border-r transition-all duration-300 ease-in-out bg-background mt-16",
+            "border-r transition-all duration-300 ease-in-out bg-background/80 backdrop-blur-md mt-16 z-[90]",
             isCollapsed ? "w-[60px]" : "w-[240px]",
           )}
         >
@@ -226,8 +229,19 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
         <Button
           variant="outline"
           size="icon"
-          className="fixed z-50 h-8 w-8 rounded-full bg-background p-0 transition-all duration-300 ease-in-out dark:bg-gray-800 dark:hover:bg-gray-700"
-          style={{ left: `${sidebarWidth - 12}px`, top: "80px" }}
+          className={cn(
+            "fixed z-[100] h-8 w-8 rounded-full bg-background p-0",
+            "transition-all duration-300 ease-in-out",
+            "hover:bg-primary/10 hover:text-primary",
+            "dark:bg-background dark:hover:bg-primary/20",
+            "gradient-border",
+          )}
+          style={{
+            position: "fixed",
+            left: `${sidebarWidth - 12}px`,
+            top: "80px",
+            transform: "translateZ(0)",
+          }}
           onClick={() => {
             const newState = !isCollapsed
             setIsCollapsed(newState)
@@ -243,12 +257,12 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
       <div className="md:hidden">
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="fixed left-4 top-[72px] z-40">
+            <Button variant="ghost" size="icon" className="fixed left-4 top-[72px] z-40 hover:bg-primary/10">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[240px] p-0">
+          <SheetContent side="left" className="w-[240px] p-0 backdrop-blur-xl bg-background/80">
             <div className="mt-16">
               <NavigationContent />
               <UserMenu />

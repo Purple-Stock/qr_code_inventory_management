@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
@@ -13,9 +12,13 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getItem, updateItem } from "@/app/actions"
+import { getItem, updateItem, getCategories, getLocations } from "@/app/actions"
 import { toast } from "@/components/ui/use-toast"
 import { useLanguage } from "@/contexts/language-context"
+import type { Database } from "@/types/database"
+
+type Category = Database["public"]["Tables"]["categories"]["Row"]
+type Location = Database["public"]["Tables"]["locations"]["Row"]
 
 export default function EditItem() {
   const router = useRouter()
@@ -23,24 +26,32 @@ export default function EditItem() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [item, setItem] = useState<any>(null)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const { t } = useLanguage()
 
   useEffect(() => {
-    async function fetchItem() {
+    async function fetchData() {
       try {
-        if (params.id) {
-          const foundItem = await getItem(Number(params.id))
-          if (!foundItem) {
-            toast({
-              title: t("error"),
-              description: t("item_not_found"),
-              variant: "destructive",
-            })
-            router.push("/")
-            return
-          }
-          setItem(foundItem)
+        const [fetchedItem, fetchedCategories, fetchedLocations] = await Promise.all([
+          getItem(Number(params.id)),
+          getCategories(),
+          getLocations(),
+        ])
+
+        if (!fetchedItem) {
+          toast({
+            title: t("error"),
+            description: t("item_not_found"),
+            variant: "destructive",
+          })
+          router.push("/")
+          return
         }
+
+        setItem(fetchedItem)
+        setCategories(fetchedCategories)
+        setLocations(fetchedLocations)
       } catch (error) {
         toast({
           title: t("error"),
@@ -51,7 +62,7 @@ export default function EditItem() {
         setIsLoading(false)
       }
     }
-    fetchItem()
+    fetchData()
   }, [params.id, router, t])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -173,32 +184,24 @@ export default function EditItem() {
                     </div>
                     <div className="grid gap-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="type">{t("type")}</Label>
-                        <Input id="type" name="type" defaultValue={item.type} />
+                        <Label htmlFor="category">{t("category")}</Label>
+                        <Select name="category_id" defaultValue={item.category_id?.toString()}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("select_category")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="grid gap-2">
                         <Label htmlFor="brand">{t("brand")}</Label>
                         <Input id="brand" name="brand" defaultValue={item.brand} />
-                      </div>
-                    </div>
-                  </Card>
-
-                  <Card className="p-6">
-                    <h2 className="text-lg font-semibold mb-4">{t("location")}</h2>
-                    <div className="grid gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="location">{t("location")}</Label>
-                        <Select name="location" defaultValue={item.location}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("default_location")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="default">{t("default_location")}</SelectItem>
-                            <SelectItem value="warehouse">{t("warehouse")}</SelectItem>
-                            <SelectItem value="store">{t("store")}</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
                   </Card>

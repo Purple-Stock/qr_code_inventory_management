@@ -4,10 +4,30 @@ This folder contains all database migrations for the Purple Stock application. M
 
 ## Migration Files
 
-- `000001_create_initial_tables.sql`: Creates the initial schema with items and stock_transactions tables
-- `000002_create_item_functions.sql`: Creates functions and triggers for managing item quantities
-- `000003_setup_rls.sql`: Sets up Row Level Security policies
-- `000004_add_audit_timestamps.sql`: Adds audit timestamps and triggers
+1. `000001_create_base_schema.sql`: Creates the initial schema with core tables
+   - Categories table
+   - Locations table
+   - Items table
+   - Item Locations table
+   - Stock Transactions table
+   - Creates necessary indexes
+   - Inserts default category and location
+
+2. `000002_create_functions_and_triggers.sql`: Creates functions and triggers
+   - Update timestamps trigger
+   - Update item quantity function and trigger
+   - Stock validation function and trigger
+   - Item locations initialization function and trigger
+
+3. `000003_setup_rls_policies.sql`: Sets up Row Level Security
+   - Enables RLS on all tables
+   - Creates development policies (all access)
+   - Provides template for production policies
+
+4. `000004_create_views.sql`: Creates views for common queries
+   - Item stock summary view
+   - Transaction history view
+   - Stock alerts view
 
 ## How to Apply Migrations
 
@@ -22,6 +42,19 @@ Each migration file includes commented rollback SQL at the bottom. To rollback:
 1. Locate the migration you want to rollback to
 2. Execute the rollback SQL statements in reverse order
 3. Verify the database state after rollback
+
+## Key Changes from Previous Schema
+
+1. Added proper category support with hierarchical structure
+2. Enhanced location management with hierarchical structure
+3. Improved stock tracking with item_locations table
+4. Added stock transaction types as ENUM
+5. Enhanced audit trail with updated_at timestamps
+6. Added views for common queries
+7. Improved indexes for better performance
+8. Added support for minimum stock levels and alerts
+9. Added proper foreign key constraints
+10. Added support for item status (active/inactive)
 
 ## Creating New Migrations
 

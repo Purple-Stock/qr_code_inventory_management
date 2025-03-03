@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { duplicateItem, exportItemsToCSV, insertDummyData, getItems, deleteItem } from "./actions"
+import { duplicateItem, exportItemsToCSV, getItems, deleteItem, insertDummyData, getCategories } from "./actions"
 import { toast } from "@/components/ui/use-toast"
 import { CSVImport } from "@/components/csv-import"
 import { Download } from "lucide-react"
@@ -27,9 +27,12 @@ import type { Database } from "@/types/database"
 import { DeleteAlert } from "@/components/delete-alert"
 
 type Item = Database["public"]["Tables"]["items"]["Row"]
+type Category = Database["public"]["Tables"]["categories"]["Row"]
 
 export default function ItemList() {
   const [items, setItems] = useState<Item[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{ id: number; name: string } | null>(null)
@@ -54,8 +57,18 @@ export default function ItemList() {
     }
   }
 
+  const loadCategories = async () => {
+    try {
+      const fetchedCategories = await getCategories()
+      setCategories(fetchedCategories)
+    } catch (err) {
+      console.error("Failed to fetch categories:", err)
+    }
+  }
+
   useEffect(() => {
     refreshItems()
+    loadCategories()
   }, [])
 
   const handleDuplicate = async (id: number) => {
@@ -136,6 +149,9 @@ export default function ItemList() {
     setItemToDelete(null)
   }
 
+  const filteredItems =
+    selectedCategory === "all" ? items : items.filter((item) => item.category_id === Number(selectedCategory))
+
   return (
     <div className="flex min-h-screen bg-background">
       <MainNav />
@@ -161,7 +177,26 @@ export default function ItemList() {
                       {t("add_item")}
                     </Link>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleInsertDummyData}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const result = await insertDummyData()
+                      if (result.success) {
+                        toast({
+                          title: t("success"),
+                          description: t("dummy_data_success"),
+                        })
+                        refreshItems()
+                      } else {
+                        toast({
+                          title: t("error"),
+                          description: t("dummy_data_error"),
+                          variant: "destructive",
+                        })
+                      }
+                    }}
+                  >
                     {t("insert_dummy_data")}
                   </Button>
                 </div>
@@ -172,15 +207,17 @@ export default function ItemList() {
                   <Input placeholder={t("search_items")} className="pl-10" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select defaultValue="all">
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder={t("all_categories")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">{t("all_categories")}</SelectItem>
-                      <SelectItem value="electronics">Electronics</SelectItem>
-                      <SelectItem value="clothing">Clothing</SelectItem>
-                      <SelectItem value="food">Food</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button variant="outline" size="icon">
@@ -220,14 +257,14 @@ export default function ItemList() {
                         {error}
                       </TableCell>
                     </TableRow>
-                  ) : items.length === 0 ? (
+                  ) : filteredItems.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
                         {t("no_items_found")}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    items.map((item) => (
+                    filteredItems.map((item) => (
                       <TableRow key={item.id} className="hover:bg-muted/50 dark:hover:bg-muted/50">
                         <TableCell>
                           <Checkbox />
@@ -238,7 +275,7 @@ export default function ItemList() {
                           </Link>
                         </TableCell>
                         <TableCell>{item.sku}</TableCell>
-                        <TableCell>{item.type}</TableCell>
+                        <TableCell>{item.categories?.name || "-"}</TableCell>
                         <TableCell className="text-right">{item.current_quantity}</TableCell>
                         <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
                         <TableCell>
@@ -282,7 +319,7 @@ export default function ItemList() {
           <footer className="bg-background border-t dark:border-gray-700 py-4 px-6">
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">
-                {t("showing_items").replace("{0}", items.length.toString())}
+                {t("showing_items").replace("{0}", filteredItems.length.toString())}
               </p>
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm">

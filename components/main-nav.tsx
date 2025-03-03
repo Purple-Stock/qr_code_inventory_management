@@ -16,8 +16,8 @@ import {
   Printer,
   ArrowUpDown,
   Settings,
-  ShoppingCart,
   Upload,
+  Database,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -39,11 +39,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useLanguage } from "@/contexts/language-context"
 
 export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) => void }) {
-  const [isCollapsed, setIsCollapsed] = React.useState(false)
+  const [isCollapsed, setIsCollapsed] = React.useState(true)
   const [sidebarWidth, setSidebarWidth] = React.useState(240)
   const [openItems, setOpenItems] = React.useState<{ [key: string]: boolean }>({})
   const pathname = usePathname()
   const { language, setLanguage, t } = useLanguage()
+
+  React.useEffect(() => {
+    const storedState = localStorage.getItem("sidebar-collapsed")
+    if (storedState !== null) {
+      setIsCollapsed(storedState === "true")
+    }
+  }, [])
 
   React.useEffect(() => {
     setSidebarWidth(isCollapsed ? 60 : 240)
@@ -55,6 +62,8 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
     { href: "/stock-out", icon: Upload, label: "stock_out" },
     { href: "/adjust", icon: ArrowUpDown, label: "adjust_stock" },
     { href: "/move-stock", icon: MoveRight, label: "move_stock" },
+    { href: "/transactions", icon: BarChart, label: "transactions" },
+    { href: "#", icon: Printer, label: "print_barcode", hasSubmenu: true },
     {
       href: "#",
       icon: BarChart,
@@ -66,9 +75,16 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
         { href: "/reports/analytics", label: "analytics" },
       ],
     },
-    { href: "/transactions", icon: BarChart, label: "transactions" },
-    { href: "#", icon: ShoppingCart, label: "purchase_sales", hasSubmenu: true },
-    { href: "#", icon: Printer, label: "print_barcode", hasSubmenu: true },
+    {
+      href: "#",
+      icon: Database,
+      label: "data_center",
+      hasSubmenu: true,
+      submenuItems: [
+        { href: "/locations", label: "locations" },
+        { href: "/categories", label: "categories" },
+      ],
+    },
     { href: "/settings", icon: Settings, label: "settings" },
   ]
 
@@ -196,8 +212,10 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
           className="fixed z-50 h-8 w-8 rounded-full bg-background p-0 transition-all duration-300 ease-in-out dark:bg-gray-800 dark:hover:bg-gray-700"
           style={{ left: `${sidebarWidth - 12}px`, top: "80px" }}
           onClick={() => {
-            setIsCollapsed(!isCollapsed)
-            onToggle?.(!isCollapsed)
+            const newState = !isCollapsed
+            setIsCollapsed(newState)
+            localStorage.setItem("sidebar-collapsed", String(newState))
+            onToggle?.(newState)
           }}
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}

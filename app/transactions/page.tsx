@@ -2,7 +2,15 @@
 
 import * as React from "react"
 import { format } from "date-fns"
-import { CalendarIcon, Download, Filter, ArrowDownToLine, ArrowUpFromLine, ArrowUpDown } from "lucide-react"
+import {
+  CalendarIcon,
+  Download,
+  Filter,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ArrowUpDown,
+  MoreVertical,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -12,29 +20,34 @@ import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "@/contexts/language-context"
 import type { DateRange } from "react-day-picker"
+import { getTransactions, getTransactionDetails } from "@/app/actions"
+import { Avatar } from "@/components/ui/avatar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-// Mock data - replace with actual API calls
-const transactions = [
-  {
-    id: 1,
-    type: "stock_in",
-    items: 1,
-    quantity: 44,
-    date: "2025-01-29T13:10:00",
-    user: "Matheus Puppe",
-    memo: "teste",
-  },
-  {
-    id: 2,
-    type: "adjust",
-    items: 1,
-    quantity: 33,
-    date: "2025-01-29T12:27:00",
-    user: "Matheus Puppe",
-    memo: "teste",
-    details: "Initial quantity",
-  },
-]
+interface Transaction {
+  id: number
+  type: "stock_in" | "stock_out" | "adjust" | "move"
+  quantity: number
+  created_at: string
+  memo: string
+  items: {
+    id: number
+    name: string
+    sku: string
+  }
+  from_locations?: {
+    id: number
+    name: string
+  }
+  to_locations?: {
+    id: number
+    name: string
+  }
+  suppliers?: {
+    id: number
+    name: string
+  }
+}
 
 export default function TransactionsPage() {
   const { t } = useLanguage()
@@ -42,7 +55,25 @@ export default function TransactionsPage() {
     from: new Date(2025, 0, 1),
     to: new Date(),
   })
-  const [selectedTransaction, setSelectedTransaction] = React.useState<(typeof transactions)[0] | null>(null)
+  const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null)
+  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  const loadTransactions = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await getTransactions(date?.from?.toISOString(), date?.to?.toISOString())
+      setTransactions(data)
+    } catch (error) {
+      console.error("Failed to load transactions:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [date])
+
+  React.useEffect(() => {
+    loadTransactions()
+  }, [loadTransactions])
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -65,6 +96,8 @@ export default function TransactionsPage() {
         return t("stock_out")
       case "adjust":
         return t("adjust")
+      case "move":
+        return t("move")
       default:
         return type
     }
@@ -73,6 +106,15 @@ export default function TransactionsPage() {
   const handleExportExcel = () => {
     // Implement export functionality
     console.log("Exporting to Excel...")
+  }
+
+  const handleTransactionSelect = async (transaction: Transaction) => {
+    try {
+      const details = await getTransactionDetails(transaction.id)
+      setSelectedTransaction(details)
+    } catch (error) {
+      console.error("Failed to load transaction details:", error)
+    }
   }
 
   return (
@@ -139,7 +181,7 @@ export default function TransactionsPage() {
                         "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
                         selectedTransaction?.id === transaction.id && "bg-muted",
                       )}
-                      onClick={() => setSelectedTransaction(transaction)}
+                      onClick={() => handleTransactionSelect(transaction)}
                     >
                       <div className="flex items-start gap-4">
                         <div className="p-2 rounded-full bg-muted">{getTransactionIcon(transaction.type)}</div>
@@ -147,21 +189,28 @@ export default function TransactionsPage() {
                           <div className="flex items-center justify-between">
                             <div className="font-medium">{getTransactionLabel(transaction.type)}</div>
                             <div className="text-sm text-muted-foreground">
-                              {format(new Date(transaction.date), "h:mm a")}
+                              {format(new Date(transaction.created_at), "h:mm a")}
                             </div>
                           </div>
                           <div className="text-sm">
-                            {transaction.items} {t("items")} / {transaction.type === "stock_in" ? "+" : ""}
-                            {transaction.quantity}
+                            {transaction.items?.name} ({transaction.items?.sku})
+                          </div>
+                          <div className="text-sm">
+                            {transaction.quantity > 0 ? "+" : ""}
+                            {transaction.quantity} {t("items")}
                           </div>
                           <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div>{transaction.user}</div>
-                            <div>{format(new Date(transaction.date), "MMM d, yyyy")}</div>
+                            <div>
+                              {transaction.type === "stock_in" && transaction.suppliers?.name}
+                              {transaction.type === "move" && (
+                                <>
+                                  {transaction.from_locations?.name} → {transaction.to_locations?.name}
+                                </>
+                              )}
+                            </div>
+                            <div>{format(new Date(transaction.created_at), "MMM d, yyyy")}</div>
                           </div>
                           {transaction.memo && <div className="text-sm text-muted-foreground">{transaction.memo}</div>}
-                          {transaction.details && (
-                            <div className="text-sm text-muted-foreground">▸ {transaction.details}</div>
-                          )}
                         </div>
                       </div>
                     </Card>
@@ -175,8 +224,80 @@ export default function TransactionsPage() {
                 <div className="p-6">
                   {selectedTransaction ? (
                     <div className="space-y-6">
-                      <h2 className="text-lg font-semibold">{t("transaction_details")}</h2>
-                      {/* Add transaction details here */}
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-semibold">{t("transaction_details")}</h2>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>Print</DropdownMenuItem>
+                            <DropdownMenuItem>Export</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="grid gap-1">
+                          <div className="text-sm font-medium">{t("type")}</div>
+                          <div>{getTransactionLabel(selectedTransaction.type)}</div>
+                        </div>
+
+                        <div className="grid gap-1">
+                          <div className="text-sm font-medium">{t("date")}</div>
+                          <div>{format(new Date(selectedTransaction.created_at), "PPP p")}</div>
+                        </div>
+
+                        {selectedTransaction.type === "stock_in" && selectedTransaction.suppliers && (
+                          <div className="grid gap-1">
+                            <div className="text-sm font-medium">{t("supplier")}</div>
+                            <div>{selectedTransaction.suppliers.name}</div>
+                          </div>
+                        )}
+
+                        {selectedTransaction.type === "move" && (
+                          <>
+                            <div className="grid gap-1">
+                              <div className="text-sm font-medium">{t("from_location")}</div>
+                              <div>{selectedTransaction.from_locations?.name}</div>
+                            </div>
+                            <div className="grid gap-1">
+                              <div className="text-sm font-medium">{t("to_location")}</div>
+                              <div>{selectedTransaction.to_locations?.name}</div>
+                            </div>
+                          </>
+                        )}
+
+                        <div className="grid gap-1">
+                          <div className="text-sm font-medium">{t("items")}</div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-4">
+                              <Avatar className="h-10 w-10">
+                                <div className="bg-muted w-full h-full flex items-center justify-center text-xs font-medium">
+                                  {selectedTransaction.items?.name?.[0]}
+                                </div>
+                              </Avatar>
+                              <div>
+                                <div>{selectedTransaction.items?.name}</div>
+                                <div className="text-sm text-muted-foreground">{selectedTransaction.items?.sku}</div>
+                              </div>
+                              <div className="ml-auto font-medium">
+                                {selectedTransaction.quantity > 0 ? "+" : ""}
+                                {selectedTransaction.quantity}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {selectedTransaction.memo && (
+                          <div className="grid gap-1">
+                            <div className="text-sm font-medium">{t("memo")}</div>
+                            <div>{selectedTransaction.memo}</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="h-full flex items-center justify-center text-muted-foreground">

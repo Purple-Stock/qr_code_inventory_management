@@ -1,6 +1,6 @@
 "use client"
 
-import { Package } from "lucide-react"
+import { Package, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
@@ -17,8 +17,11 @@ export function MainHeader() {
           <span className="text-lg font-bold text-purple-600">PURPLE STOCK</span>
         </Link>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            {t("upgrade")}
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/settings" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              {t("assinar")}
+            </Link>
           </Button>
           <Button variant="outline" size="sm">
             {t("user_guide")}

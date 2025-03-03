@@ -26,29 +26,43 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getItem } from "@/app/actions"
+import { getItemTransactions } from "@/lib/db/items"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "next-i18next"
 
+interface Transaction {
+  id: number
+  type: string
+  created_at: string
+  quantity: number
+  from_locations?: { name: string } | null
+  to_locations?: { name: string } | null
+  suppliers?: { name: string } | null
+  memo?: string | null
+}
+
 function TransactionItem({
   type,
   date,
   quantity,
-  currentStock,
+  fromLocation,
+  toLocation,
   memo,
 }: {
   type: string
   date: string
   quantity: number
-  currentStock: number
+  fromLocation?: string
+  toLocation?: string
   memo?: string
 }) {
   const getIcon = () => {
     switch (type.toLowerCase()) {
-      case "stock in":
+      case "stock_in":
         return <ArrowDownToLine className="h-4 w-4 text-green-500" />
-      case "stock out":
+      case "stock_out":
         return <ArrowUpFromLine className="h-4 w-4 text-red-500" />
       case "adjust":
         return <ArrowUpDown className="h-4 w-4 text-blue-500" />
@@ -65,18 +79,39 @@ function TransactionItem({
     return "text-gray-500"
   }
 
+  const getLocationText = () => {
+    if (type === "move" && fromLocation && toLocation) {
+      return `${fromLocation} → ${toLocation}`
+    }
+    if (type === "stock_in" && toLocation) {
+      return `To: ${toLocation}`
+    }
+    if (type === "stock_out" && fromLocation) {
+      return `From: ${fromLocation}`
+    }
+    if (type === "adjust" && toLocation) {
+      return `At: ${toLocation}`
+    }
+    return null
+  }
+
   return (
     <div className="flex items-center justify-between py-2 border-b last:border-0">
       <div className="flex items-start gap-2">
         <div className="p-1 bg-muted rounded-full">{getIcon()}</div>
         <div>
-          <div className="text-sm font-medium">{type}</div>
-          <div className="text-xs text-muted-foreground">{format(new Date(date), "MMM dd, yyyy")}</div>
+          <div className="text-sm font-medium">{type.replace("_", " ").toUpperCase()}</div>
+          <div className="text-xs text-muted-foreground">{format(new Date(date), "MMM dd, yyyy HH:mm")}</div>
+          {(memo || getLocationText()) && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {memo && <div>{memo}</div>}
+              {getLocationText() && <div>{getLocationText()}</div>}
+            </div>
+          )}
         </div>
       </div>
       <div className="text-right">
         <div className={cn("text-sm font-medium", getQuantityColor())}>{quantity > 0 ? `+${quantity}` : quantity}</div>
-        <div className="text-xs text-muted-foreground">{currentStock}</div>
       </div>
     </div>
   )
@@ -94,13 +129,14 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 export default function ItemDetails() {
   const params = useParams()
   const [item, setItem] = useState<any>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [error, setError] = useState<string | null>(null)
   const qrRef = useRef<SVGSVGElement>(null)
   const [sidebarWidth, setSidebarWidth] = useState(240)
   const { t } = useTranslation("common")
 
   useEffect(() => {
-    async function fetchItem() {
+    async function fetchData() {
       try {
         if (params.id) {
           const foundItem = await getItem(Number(params.id))
@@ -109,12 +145,15 @@ export default function ItemDetails() {
             return
           }
           setItem(foundItem)
+
+          const itemTransactions = await getItemTransactions(Number(params.id))
+          setTransactions(itemTransactions)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred")
       }
     }
-    fetchItem()
+    fetchData()
   }, [params.id])
 
   const handleSidebarToggle = (collapsed: boolean) => {
@@ -195,27 +234,22 @@ export default function ItemDetails() {
     }
   }
 
-  // Mock transactions data - in real app, this would come from your database
-  const transactions = [
-    {
-      type: "Stock In",
-      date: "2025-01-29",
-      quantity: 44,
-      currentStock: 77,
-    },
-    {
-      type: "Adjust",
-      date: "2025-01-29",
-      quantity: 33,
-      currentStock: 33,
-      memo: "Initial quantity",
-    },
-  ]
-
   const filteredTransactions = (type: string) => {
     if (type === "all") return transactions
-    return transactions.filter((t) => t.type.toLowerCase().includes(type.toLowerCase()))
+    if (type === "in") return transactions.filter((t) => t.type === "stock_in")
+    if (type === "out") return transactions.filter((t) => t.type === "stock_out")
+    if (type === "adjust") return transactions.filter((t) => t.type === "adjust")
+    if (type === "move") return transactions.filter((t) => t.type === "move")
+    return transactions
   }
+
+  // Calculate current stock from transactions
+  const currentStock = transactions.reduce((total, t) => {
+    if (t.type === "stock_in") return total + t.quantity
+    if (t.type === "stock_out") return total - t.quantity
+    if (t.type === "adjust") return t.quantity // Adjust sets the quantity directly
+    return total
+  }, 0)
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -313,12 +347,6 @@ export default function ItemDetails() {
                       </label>
                       <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.brand}</p>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        {t("location")}
-                      </label>
-                      <p className="text-base font-medium bg-muted/50 p-2 rounded-md">{item.location || "N/A"}</p>
-                    </div>
                   </div>
                 </Card>
 
@@ -326,7 +354,7 @@ export default function ItemDetails() {
                   <Card className="p-4 sm:p-6">
                     <h2 className="text-xl sm:text-2xl font-semibold mb-4">Current Status</h2>
                     <div className="text-center mb-4">
-                      <div className="text-4xl sm:text-5xl font-bold text-[#9333E9]">{item.initial_quantity}</div>
+                      <div className="text-4xl sm:text-5xl font-bold text-[#9333E9]">{currentStock}</div>
                       <div className="text-sm text-muted-foreground mt-2">Available Stock</div>
                     </div>
                     <Tabs defaultValue="all" className="w-full">
@@ -341,14 +369,15 @@ export default function ItemDetails() {
                         <TabsContent key={tab} value={tab} className="mt-4">
                           <div className="space-y-1 max-h-48 overflow-y-auto">
                             {filteredTransactions(tab).length > 0 ? (
-                              filteredTransactions(tab).map((transaction, index) => (
+                              filteredTransactions(tab).map((transaction) => (
                                 <TransactionItem
-                                  key={index}
+                                  key={transaction.id}
                                   type={transaction.type}
-                                  date={transaction.date}
+                                  date={transaction.created_at}
                                   quantity={transaction.quantity}
-                                  currentStock={transaction.currentStock}
-                                  memo={transaction.memo}
+                                  fromLocation={transaction.from_locations?.name}
+                                  toLocation={transaction.to_locations?.name}
+                                  memo={transaction.memo || undefined}
                                 />
                               ))
                             ) : (

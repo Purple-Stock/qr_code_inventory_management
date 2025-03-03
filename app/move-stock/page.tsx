@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import MainNav from "@/components/main-nav"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { createStockMove, searchItems } from "../actions"
+import { createStockMove, searchItems, getLocations } from "../actions"
 import { toast } from "@/components/ui/use-toast"
 import { FileSpreadsheet, QrCode, Search, Plus } from "lucide-react"
 import { CSVImport } from "@/components/csv-import"
@@ -33,18 +33,25 @@ export default function MoveStock() {
   const [searchQuery, setSearchQuery] = useState("")
   const [insertedItemsSearchQuery, setInsertedItemsSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState([])
-  const [fromLocation, setFromLocation] = useState("default")
-  const [toLocation, setToLocation] = useState("warehouse")
+  const [fromLocation, setFromLocation] = useState("")
+  const [toLocation, setToLocation] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [memo, setMemo] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [locations, setLocations] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const { t } = useLanguage()
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query)
     if (query.length > 2) {
       const results = await searchItems(query)
-      setSearchResults(results)
+      const resultsWithLocations = results.map((item) => ({
+        ...item,
+        currentStock:
+          item.item_locations?.find((loc) => loc.location_id === Number(fromLocation))?.current_quantity || 0,
+      }))
+      setSearchResults(resultsWithLocations)
     } else {
       setSearchResults([])
     }
@@ -77,8 +84,8 @@ export default function MoveStock() {
 
   const handleReset = () => {
     setItems([])
-    setFromLocation("default")
-    setToLocation("warehouse")
+    setFromLocation("")
+    setToLocation("")
     setMemo("")
   }
 
@@ -87,12 +94,37 @@ export default function MoveStock() {
     setIsSubmitting(true)
 
     try {
+      if (!fromLocation || !toLocation) {
+        toast({
+          title: t("error"),
+          description: t("select_both_locations"),
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (fromLocation === toLocation) {
+        toast({
+          title: t("error"),
+          description: t("locations_must_be_different"),
+          variant: "destructive",
+        })
+        return
+      }
+
+      const moveItems = items.map((item) => ({
+        itemId: item.itemId,
+        quantity: item.quantity,
+        from_location_id: Number(fromLocation),
+        to_location_id: Number(toLocation),
+      }))
+
       const formData = new FormData()
-      formData.append("from_location", fromLocation)
-      formData.append("to_location", toLocation)
+      formData.append("from_location_id", fromLocation)
+      formData.append("to_location_id", toLocation)
       formData.append("date", date)
       formData.append("memo", memo)
-      formData.append("items", JSON.stringify(items))
+      formData.append("items", JSON.stringify(moveItems))
 
       const result = await createStockMove(formData)
 
@@ -120,6 +152,29 @@ export default function MoveStock() {
     }
   }
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const fetchedLocations = await getLocations()
+        setLocations(fetchedLocations)
+        // Set default location if available
+        if (fetchedLocations.length > 0) {
+          setFromLocation(fetchedLocations[0].id.toString())
+        }
+      } catch (error) {
+        console.error("Failed to load data:", error)
+        toast({
+          title: t("error"),
+          description: t("failed_to_load_data"),
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [t])
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
@@ -143,12 +198,14 @@ export default function MoveStock() {
                       <label className="text-sm font-medium">{t("from_location")}</label>
                       <Select value={fromLocation} onValueChange={setFromLocation}>
                         <SelectTrigger>
-                          <SelectValue placeholder={t("default_location")} />
+                          <SelectValue placeholder={t("select_location")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="default">{t("default_location")}</SelectItem>
-                          <SelectItem value="warehouse">{t("warehouse")}</SelectItem>
-                          <SelectItem value="store">{t("store")}</SelectItem>
+                          {locations.map((location) => (
+                            <SelectItem key={location.id} value={location.id.toString()}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -157,12 +214,14 @@ export default function MoveStock() {
                       <label className="text-sm font-medium">{t("to_location")}</label>
                       <Select value={toLocation} onValueChange={setToLocation}>
                         <SelectTrigger>
-                          <SelectValue placeholder={t("warehouse")} />
+                          <SelectValue placeholder={t("select_location")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="default">{t("default_location")}</SelectItem>
-                          <SelectItem value="warehouse">{t("warehouse")}</SelectItem>
-                          <SelectItem value="store">{t("store")}</SelectItem>
+                          {locations.map((location) => (
+                            <SelectItem key={location.id} value={location.id.toString()}>
+                              {location.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

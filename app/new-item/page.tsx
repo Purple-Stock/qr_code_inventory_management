@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,16 +12,35 @@ import { Card } from "@/components/ui/card"
 import Link from "next/link"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createItem, generateSku, generateBarcode } from "../actions"
+import { createItem, generateSku, generateBarcode, getCategories, getLocations } from "../actions"
 import { toast } from "@/components/ui/use-toast"
 import { useLanguage } from "@/contexts/language-context"
+import type { Database } from "@/types/database"
+
+type Category = Database["public"]["Tables"]["categories"]["Row"]
+type Location = Database["public"]["Tables"]["locations"]["Row"]
 
 export default function NewItem() {
   const [sku, setSku] = useState("")
   const [barcode, setBarcode] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const router = useRouter()
   const { t } = useLanguage()
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [fetchedCategories, fetchedLocations] = await Promise.all([getCategories(), getLocations()])
+        setCategories(fetchedCategories)
+        setLocations(fetchedLocations)
+      } catch (error) {
+        console.error("Failed to fetch data:", error)
+      }
+    }
+    loadData()
+  }, [])
 
   const handleGenerateSku = async () => {
     try {
@@ -89,24 +107,19 @@ export default function NewItem() {
         <SidebarInset className="flex-1">
           <div className="h-full flex flex-col">
             <div className="border-b bg-card dark:bg-gray-800 px-6 py-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Link href="/" className="hover:text-foreground">
-                    {t("item_list")}
-                  </Link>
-                  <ChevronRight className="h-4 w-4" />
-                  <span className="text-foreground">{t("new_item")}</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => router.push("/")} disabled={isSubmitting}>
-                  {t("cancel")}
-                </Button>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Link href="/" className="hover:text-foreground">
+                  {t("item_list")}
+                </Link>
+                <ChevronRight className="h-4 w-4" />
+                <span className="text-foreground">{t("new_item")}</span>
               </div>
             </div>
 
             <div className="flex-1 overflow-auto">
               <div className="max-w-3xl w-full mx-auto p-6">
                 <form className="space-y-6" onSubmit={handleSubmit}>
-                  <Card className="p-6 bg-card dark:bg-gray-800">
+                  <Card className="p-6">
                     <h2 className="text-lg font-semibold mb-4">{t("item_information")}</h2>
                     <div className="grid gap-4">
                       <div className="grid gap-2">
@@ -167,7 +180,7 @@ export default function NewItem() {
                     </div>
                   </Card>
 
-                  <Card className="p-6 bg-card dark:bg-gray-800">
+                  <Card className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-lg font-semibold">{t("item_attribute")}</h2>
                       <Button variant="link" className="text-[#9333E9]">
@@ -175,6 +188,22 @@ export default function NewItem() {
                       </Button>
                     </div>
                     <div className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="category">{t("category")}</Label>
+                        <Select name="category_id">
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("select_category")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="grid gap-2">
                         <Label htmlFor="type">{t("type")}</Label>
                         <Input id="type" name="type" placeholder={t("input_text")} />
@@ -187,19 +216,21 @@ export default function NewItem() {
                     </div>
                   </Card>
 
-                  <Card className="p-6 bg-card dark:bg-gray-800">
+                  <Card className="p-6">
                     <h2 className="text-lg font-semibold mb-4">{t("initial_quantity")}</h2>
                     <div className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="location">{t("location")}</Label>
-                        <Select name="location" defaultValue="default">
+                        <Select name="location_id" defaultValue={locations[0]?.id.toString()}>
                           <SelectTrigger>
-                            <SelectValue placeholder={t("default_location")} />
+                            <SelectValue placeholder={t("select_location")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="default">{t("default_location")}</SelectItem>
-                            <SelectItem value="warehouse">{t("warehouse")}</SelectItem>
-                            <SelectItem value="store">{t("store")}</SelectItem>
+                            {locations.map((location) => (
+                              <SelectItem key={location.id} value={location.id.toString()}>
+                                {location.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

@@ -7,44 +7,119 @@ export interface Database {
         Row: {
           id: number
           created_at: string
+          updated_at: string
           sku: string
           name: string
-          barcode: string
+          description: string | null
+          barcode: string | null
           cost: number
           price: number
-          type: string
-          brand: string
-          location: string
+          category_id: number | null
+          brand: string | null
           initial_quantity: number
+          minimum_quantity: number
+          is_active: boolean
           current_quantity: number
+          categories?: {
+            id: number
+            name: string
+          } | null
+          item_locations?: {
+            location_id: number
+            current_quantity: number
+          }[]
         }
         Insert: {
           id?: number
           created_at?: string
+          updated_at?: string
           sku: string
           name: string
-          barcode: string
-          cost: number
-          price: number
-          type: string
-          brand: string
-          location: string
-          initial_quantity: number
-          current_quantity: number
+          description?: string | null
+          barcode?: string | null
+          cost?: number
+          price?: number
+          category_id?: number | null
+          brand?: string | null
+          initial_quantity?: number
+          minimum_quantity?: number
+          is_active?: boolean
+          current_quantity?: number
         }
         Update: {
           id?: number
           created_at?: string
+          updated_at?: string
           sku?: string
           name?: string
-          barcode?: string
+          description?: string | null
+          barcode?: string | null
           cost?: number
           price?: number
-          type?: string
-          brand?: string
-          location?: string
+          category_id?: number | null
+          brand?: string | null
           initial_quantity?: number
+          minimum_quantity?: number
+          is_active?: boolean
           current_quantity?: number
+        }
+      }
+      categories: {
+        Row: {
+          id: number
+          created_at: string
+          updated_at: string
+          name: string
+          description: string | null
+          parent_id: number | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          name: string
+          description?: string | null
+          parent_id?: number | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          name?: string
+          description?: string | null
+          parent_id?: number | null
+          is_active?: boolean
+        }
+      }
+      locations: {
+        Row: {
+          id: number
+          created_at: string
+          updated_at: string
+          name: string
+          description: string | null
+          parent_id: number | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          name: string
+          description?: string | null
+          parent_id?: number | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          name?: string
+          description?: string | null
+          parent_id?: number | null
+          is_active?: boolean
         }
       }
       stock_transactions: {
@@ -77,6 +152,67 @@ export interface Database {
           memo?: string | null
           location?: string
           supplier?: string | null
+        }
+      }
+      item_locations: {
+        Row: {
+          item_id: number
+          location_id: number
+          current_quantity: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          item_id: number
+          location_id: number
+          current_quantity?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          item_id?: number
+          location_id?: number
+          current_quantity?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      suppliers: {
+        Row: {
+          id: number
+          created_at: string
+          updated_at: string
+          name: string
+          code: string | null
+          contact_person: string | null
+          email: string | null
+          phone: string | null
+          address: string | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          name: string
+          code?: string | null
+          contact_person?: string | null
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          updated_at?: string
+          name?: string
+          code?: string | null
+          contact_person?: string | null
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          is_active?: boolean
         }
       }
     }

@@ -34,7 +34,7 @@ export function MainHeader() {
           <Button variant="outline" size="sm" asChild className="gradient-border">
             <Link href="/settings" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              {t("assinar")}
+              {t("Assinar")}
             </Link>
           </Button>
           <Button variant="outline" size="sm" className="gradient-border hidden sm:flex">

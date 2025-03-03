@@ -25,8 +25,8 @@ export function ScanButton({ mode, locations = [], onSubmit }: ScanButtonProps) 
 
   const handleScan = async (result: string) => {
     try {
-      // Extract item ID from QR code URL
-      const itemId = result.split("/items/").pop()
+      // Extract item ID from QR code URL or direct ID
+      const itemId = result.includes("/items/") ? result.split("/items/").pop() : result
       if (!itemId) throw new Error("Invalid QR code")
 
       // Fetch item details

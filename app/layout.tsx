@@ -9,6 +9,9 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { LanguageProvider } from "@/contexts/language-context"
 import { MainHeader } from "@/components/main-header"
+import { SessionProvider } from "@/components/session-provider"
+import { SessionGuard } from "@/components/session-guard"
+import { SessionExpiryHandler } from "@/components/session-expiry-handler"
 
 export const metadata: Metadata = {
   title: {
@@ -70,12 +73,19 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <div className="fixed inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <LanguageProvider>
-            <SidebarProvider>
-              <div className="relative flex min-h-screen flex-col">
-                <MainHeader />
-                <div className="flex-1 pt-16">{children}</div>
-              </div>
-            </SidebarProvider>
+            <SessionProvider>
+              <SidebarProvider>
+                <div className="relative flex min-h-screen flex-col">
+                  <MainHeader />
+                  <div className="flex-1 pt-16">
+                    <SessionGuard>
+                      {children}
+                      <SessionExpiryHandler />
+                    </SessionGuard>
+                  </div>
+                </div>
+              </SidebarProvider>
+            </SessionProvider>
           </LanguageProvider>
         </ThemeProvider>
         <script

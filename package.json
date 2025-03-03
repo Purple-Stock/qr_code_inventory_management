@@ -13,7 +13,7 @@
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "^1.1.1",
-    "@radix-ui/react-avatar": "^1.1.2",
+    "@radix-ui/react-avatar": "latest",
     "@radix-ui/react-checkbox": "^1.1.3",
     "@radix-ui/react-collapsible": "^1.1.2",
     "@radix-ui/react-context-menu": "^2.2.4",
@@ -66,7 +66,9 @@
     "html5-qrcode": "latest",
     "react-barcode": "latest",
     "jspdf": "latest",
-    "html2canvas": "latest"
+    "html2canvas": "latest",
+    "@supabase/ssr": "latest",
+    "@supabase/auth-helpers-nextjs": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

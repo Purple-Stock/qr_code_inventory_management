@@ -3,6 +3,81 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export interface Database {
   public: {
     Tables: {
+      companies: {
+        Row: {
+          id: number
+          created_at: string
+          name: string
+          slug: string
+          logo_url: string | null
+          is_active: boolean
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          name: string
+          slug: string
+          logo_url?: string | null
+          is_active?: boolean
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          name?: string
+          slug?: string
+          logo_url?: string | null
+          is_active?: boolean
+        }
+      }
+      company_users: {
+        Row: {
+          id: number
+          created_at: string
+          company_id: number
+          user_id: string
+          role: "admin" | "member" | "viewer"
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          company_id: number
+          user_id: string
+          role?: "admin" | "member" | "viewer"
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          company_id?: number
+          user_id?: string
+          role?: "admin" | "member" | "viewer"
+        }
+      }
+      profiles: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          full_name: string | null
+          avatar_url: string | null
+          email: string
+        }
+        Insert: {
+          id: string
+          created_at?: string
+          updated_at?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          email: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          email?: string
+        }
+      }
       items: {
         Row: {
           id: number
@@ -20,6 +95,7 @@ export interface Database {
           minimum_quantity: number
           is_active: boolean
           current_quantity: number
+          company_id: number
           categories?: {
             id: number
             name: string
@@ -45,6 +121,7 @@ export interface Database {
           minimum_quantity?: number
           is_active?: boolean
           current_quantity?: number
+          company_id: number
         }
         Update: {
           id?: number
@@ -62,6 +139,7 @@ export interface Database {
           minimum_quantity?: number
           is_active?: boolean
           current_quantity?: number
+          company_id?: number
         }
       }
       categories: {
@@ -234,4 +312,7 @@ export interface Database {
   }
 }
 export type Location = Database["public"]["Tables"]["locations"]["Row"]
+export type Company = Database["public"]["Tables"]["companies"]["Row"]
+export type CompanyUser = Database["public"]["Tables"]["company_users"]["Row"]
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 

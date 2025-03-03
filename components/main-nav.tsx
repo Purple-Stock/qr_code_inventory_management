@@ -66,7 +66,7 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
     { href: "/adjust", icon: ArrowUpDown, label: "adjust_stock" },
     { href: "/move-stock", icon: MoveRight, label: "move_stock" },
     { href: "/transactions", icon: BarChart, label: "transactions" },
-    { href: "#", icon: Printer, label: "print_barcode", hasSubmenu: true },
+    { href: "/print-labels", icon: Printer, label: "print_barcode" },
     {
       href: "#",
       icon: BarChart,

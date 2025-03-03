@@ -63,7 +63,10 @@
     "@supabase/supabase-js": "latest",
     "qrcode.react": "latest",
     "file-saver": "latest",
-    "html5-qrcode": "latest"
+    "html5-qrcode": "latest",
+    "react-barcode": "latest",
+    "jspdf": "latest",
+    "html2canvas": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

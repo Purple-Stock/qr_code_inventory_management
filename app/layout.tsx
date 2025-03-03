@@ -1,5 +1,5 @@
 import "@/styles/globals.css"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import type React from "react"
 
 import { siteConfig } from "@/config/site"
@@ -16,20 +16,11 @@ export const metadata: Metadata = {
     template: `%s - ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-16x16.png",
     apple: "/apple-touch-icon.png",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
   },
   appleWebApp: {
     capable: true,
@@ -40,6 +31,16 @@ export const metadata: Metadata = {
     telephone: false,
   },
     generator: 'v0.dev'
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 interface RootLayoutProps {

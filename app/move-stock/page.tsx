@@ -14,9 +14,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { createStockMove, searchItems, getLocations } from "../actions"
 import { toast } from "@/components/ui/use-toast"
-import { FileSpreadsheet, QrCode, Search, Plus } from "lucide-react"
+import { FileSpreadsheet, Search, Plus } from "lucide-react"
 import { CSVImport } from "@/components/csv-import"
 import { useLanguage } from "@/contexts/language-context"
+import { ScanButton } from "@/components/scan-button"
 
 interface MoveItem {
   itemId: number
@@ -250,10 +251,86 @@ export default function MoveStock() {
                             </Button>
                           }
                         />
-                        <Button type="button" variant="outline" size="sm">
-                          <QrCode className="h-4 w-4 mr-2" />
-                          {t("scan_barcode")}
-                        </Button>
+                        <ScanButton
+                          mode="move"
+                          locations={locations}
+                          onSubmit={async (data) => {
+                            try {
+                              const { itemId, quantity, fromLocation, toLocation, item } = data
+
+                              if (!fromLocation || !toLocation) {
+                                toast({
+                                  title: t("error"),
+                                  description: t("select_both_locations"),
+                                  variant: "destructive",
+                                })
+                                return
+                              }
+
+                              if (fromLocation === toLocation) {
+                                toast({
+                                  title: t("error"),
+                                  description: t("locations_must_be_different"),
+                                  variant: "destructive",
+                                })
+                                return
+                              }
+
+                              const moveItems = [
+                                {
+                                  itemId,
+                                  quantity,
+                                  from_location_id: fromLocation,
+                                  to_location_id: toLocation,
+                                },
+                              ]
+
+                              const formData = new FormData()
+                              formData.append("from_location_id", fromLocation.toString())
+                              formData.append("to_location_id", toLocation.toString())
+                              formData.append("date", date)
+                              formData.append("memo", memo)
+                              formData.append("items", JSON.stringify(moveItems))
+
+                              const result = await createStockMove(formData)
+
+                              if (result.success) {
+                                toast({
+                                  title: t("success"),
+                                  description: result.message,
+                                })
+                                // Add item to the list after successful move
+                                if (!items.some((i) => i.itemId === itemId)) {
+                                  setItems([
+                                    ...items,
+                                    {
+                                      itemId,
+                                      name: item.name,
+                                      sku: item.sku,
+                                      currentStock: item.currentStock,
+                                      quantity,
+                                    },
+                                  ])
+                                }
+                                if (fromLocation) setFromLocation(fromLocation.toString())
+                                if (toLocation) setToLocation(toLocation.toString())
+                              } else {
+                                toast({
+                                  title: t("error"),
+                                  description: result.message,
+                                  variant: "destructive",
+                                })
+                              }
+                            } catch (error) {
+                              console.error("Error submitting:", error)
+                              toast({
+                                title: t("error"),
+                                description: t("failed_to_move_stock"),
+                                variant: "destructive",
+                              })
+                            }
+                          }}
+                        />
                       </div>
                     </div>
 

@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
   experimental: {
+    // This helps with the useSearchParams issue
     serverActions: true,
   },
   images: {
-    domains: ["localhost"],
+    domains: ["localhost", "via.placeholder.com"],
   },
 }
 

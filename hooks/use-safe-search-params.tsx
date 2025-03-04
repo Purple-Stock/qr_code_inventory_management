@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { createContext, useContext, useState, useEffect, type ReactNode, Suspense } from "react"
 import { useSearchParams as useNextSearchParams } from "next/navigation"
 
@@ -40,5 +42,30 @@ export function useSafeSearchParams() {
   }, [context])
 
   return params
+}
+
+// This component wraps the useSearchParams hook in a Suspense boundary for direct access
+function SearchParamsProvider({
+  children,
+}: {
+  children: (searchParams: URLSearchParams | null) => React.ReactNode
+}) {
+  const searchParams = useNextSearchParams()
+  return <>{children(searchParams as URLSearchParams | null)}</>
+}
+
+// Wrapper component with Suspense for render prop pattern
+export function ClientSearchParams({
+  children,
+  fallback = <div>Loading...</div>,
+}: {
+  children: (searchParams: URLSearchParams | null) => React.ReactNode
+  fallback?: React.ReactNode
+}) {
+  return (
+    <Suspense fallback={fallback}>
+      <SearchParamsProvider>{children}</SearchParamsProvider>
+    </Suspense>
+  )
 }
 

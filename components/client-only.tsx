@@ -1,17 +1,15 @@
 "use client"
 
-import type React from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
-import { useEffect, useState } from "react"
-
-export function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [isMounted, setIsMounted] = useState(false)
+export default function ClientOnly({ children }: { children: ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
+    setHasMounted(true)
   }, [])
 
-  if (!isMounted) {
+  if (!hasMounted) {
     return null
   }
 

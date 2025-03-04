@@ -14,7 +14,7 @@ import { useSessionContext } from "@/components/session-provider"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useLanguage } from "@/contexts/language-context"
-import { LanguageSwitcher } from "@/components/language-switcher"
+import { useSafeSearchParams } from "@/hooks/use-safe-search-params"
 
 export default function SignInPage() {
   const { t } = useLanguage()
@@ -24,6 +24,7 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { user } = useSessionContext()
+  const searchParams = useSafeSearchParams()
 
   // Client-side only state for search params
   const [redirectTo, setRedirectTo] = useState("/dashboard")
@@ -31,10 +32,11 @@ export default function SignInPage() {
 
   // Use useEffect to safely access search params on the client
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setRedirectTo(params.get("redirect") || "/dashboard")
-    setIsLoggingOut(params.get("logout") === "true")
-  }, [])
+    if (searchParams) {
+      setRedirectTo(searchParams.get("redirect") || "/dashboard")
+      setIsLoggingOut(searchParams.get("logout") === "true")
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (user && !isLoggingOut) {
@@ -56,7 +58,7 @@ export default function SignInPage() {
 
       router.push(redirectTo)
     } catch (err: any) {
-      setError(err.message || "Failed to sign in")
+      setError(err.message || t("failed_to_sign_in"))
     } finally {
       setIsLoading(false)
     }
@@ -64,10 +66,6 @@ export default function SignInPage() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher />
-      </div>
-
       <div className="w-full max-w-[400px] px-4">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-2">

@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next"
 import type React from "react"
 
 import { siteConfig } from "@/config/site"
-import { fontSans } from "@/lib/fonts"
+import { inter } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
@@ -12,13 +12,12 @@ import { MainHeader } from "@/components/main-header"
 import { SessionProvider } from "@/components/session-provider"
 import { SessionGuard } from "@/components/session-guard"
 import { SessionExpiryHandler } from "@/components/session-expiry-handler"
+import { SafeSearchParamsProvider } from "@/hooks/use-safe-search-params"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
+  title: "Purple Stock",
+  description: "Inventory Management System",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
@@ -64,27 +63,30 @@ export default function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body
         className={cn(
-          "min-h-screen font-sans antialiased",
+          "min-h-screen antialiased",
           "bg-gradient-to-b from-background to-background/80",
           "dark:from-background dark:to-background/50",
-          fontSans.variable,
+          inter.className,
         )}
       >
         <div className="fixed inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <LanguageProvider>
             <SessionProvider>
-              <SidebarProvider>
-                <div className="relative flex min-h-screen flex-col">
-                  <MainHeader />
-                  <div className="flex-1 pt-16">
-                    <SessionGuard>
-                      {children}
-                      <SessionExpiryHandler />
-                    </SessionGuard>
+              <SafeSearchParamsProvider>
+                <SidebarProvider>
+                  <div className="relative flex min-h-screen flex-col">
+                    <MainHeader />
+                    <div className="flex-1 pt-16">
+                      <SessionGuard>
+                        {children}
+                        <SessionExpiryHandler />
+                        <Toaster />
+                      </SessionGuard>
+                    </div>
                   </div>
-                </div>
-              </SidebarProvider>
+                </SidebarProvider>
+              </SafeSearchParamsProvider>
             </SessionProvider>
           </LanguageProvider>
         </ThemeProvider>

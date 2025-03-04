@@ -14,7 +14,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator"
 import { Package, Github, Loader2 } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
-import { LanguageSwitcher } from "@/components/language-switcher"
 
 export default function SignUpPage() {
   const { t } = useLanguage()
@@ -45,7 +44,7 @@ export default function SignUpPage() {
         setIsSuccess(true)
       }
     } catch (err) {
-      setError("An unexpected error occurred")
+      setError(t("unexpected_error"))
     } finally {
       setIsLoading(false)
     }
@@ -53,10 +52,6 @@ export default function SignUpPage() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher />
-      </div>
-
       <div className="w-full max-w-[400px] px-4">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-2">

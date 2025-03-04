@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Package, CheckCircle, Loader2 } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function ResetPasswordPage() {
+  const { t } = useLanguage()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -26,7 +28,7 @@ export default function ResetPasswordPage() {
     setError(null)
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
+      setError(t("passwords_dont_match"))
       setIsLoading(false)
       return
     }
@@ -46,7 +48,7 @@ export default function ResetPasswordPage() {
         router.push("/auth/sign-in")
       }, 3000)
     } catch (error: any) {
-      setError(error.message || "Something went wrong. Please try again.")
+      setError(error.message || t("something_went_wrong"))
     } finally {
       setIsLoading(false)
     }
@@ -61,28 +63,26 @@ export default function ResetPasswordPage() {
             <Package className="h-10 w-10 text-primary relative z-10" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-center">Purple Stock</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Inventory Management System</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("inventory_management_system")}</p>
         </div>
 
         <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm p-6">
           <div className="space-y-4">
             <div className="space-y-2 text-center">
-              <h2 className="text-xl font-semibold">Create New Password</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Enter your new password below</p>
+              <h2 className="text-xl font-semibold">{t("create_new_password")}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t("enter_new_password")}</p>
             </div>
 
             {isSuccess ? (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900 rounded-md p-4 text-center">
                 <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-500 mx-auto mb-2" />
-                <h3 className="font-medium text-green-800 dark:text-green-400">Password Updated</h3>
-                <p className="text-sm text-green-700 dark:text-green-500 mt-1">
-                  Your password has been successfully updated. Redirecting to sign in...
-                </p>
+                <h3 className="font-medium text-green-800 dark:text-green-400">{t("password_updated")}</h3>
+                <p className="text-sm text-green-700 dark:text-green-500 mt-1">{t("password_update_success")}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="password">New Password</Label>
+                  <Label htmlFor="password">{t("new_password")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword">{t("confirm_password")}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -117,16 +117,16 @@ export default function ResetPasswordPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
+                      {t("updating")}
                     </>
                   ) : (
-                    "Update Password"
+                    t("update_password")
                   )}
                 </Button>
 
                 <div className="text-center">
                   <Button asChild variant="link" className="text-sm">
-                    <Link href="/auth/sign-in">Back to Sign In</Link>
+                    <Link href="/auth/sign-in">{t("back_to_sign_in")}</Link>
                   </Button>
                 </div>
               </form>

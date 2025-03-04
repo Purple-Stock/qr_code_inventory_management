@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google"
 
-export const fontSans = Inter({
+export const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
 })

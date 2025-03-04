@@ -1,17 +1,22 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 
 type Language = "en" | "pt"
 
-interface Translations {
-  [key: string]: {
-    en: string
-    pt: string
-  }
+interface LanguageContextType {
+  language: Language
+  setLanguage: (language: Language) => void
+  t: (key: string) => string
 }
 
-const translations: Translations = {
+const translations = {
+  // General
+  inventory_management_system: {
+    en: "Inventory Management System",
+    pt: "Sistema de Gestão de Estoque",
+  },
   item_list: {
     en: "Item List",
     pt: "Lista de Itens",
@@ -1108,6 +1113,7 @@ const translations: Translations = {
     en: "Last updated",
     pt: "Última atualização",
   },
+  added_to: {},
   added_to: {
     en: "Added to",
     pt: "Adicionado a",
@@ -1304,36 +1310,138 @@ const translations: Translations = {
     en: "High Quality Print",
     pt: "Impressão em Alta Qualidade",
   },
-}
 
-interface LanguageContextType {
-  language: Language
-  setLanguage: (lang: Language) => void
-  t: (key: string) => string
+  // Authentication
+  sign_in: {
+    en: "Sign in",
+    pt: "Entrar",
+  },
+  sign_up: {
+    en: "Sign up",
+    pt: "Cadastrar",
+  },
+  email: {
+    en: "Email",
+    pt: "E-mail",
+  },
+  password: {
+    en: "Password",
+    pt: "Senha",
+  },
+  confirm_password: {
+    en: "Confirm Password",
+    pt: "Confirmar Senha",
+  },
+  forgot_password: {
+    en: "Forgot password?",
+    pt: "Esqueceu a senha?",
+  },
+  reset_password: {
+    en: "Reset Password",
+    pt: "Redefinir Senha",
+  },
+  create_account: {
+    en: "Create account",
+    pt: "Criar conta",
+  },
+  creating_account: {
+    en: "Creating account...",
+    pt: "Criando conta...",
+  },
+  signing_in: {
+    en: "Signing in...",
+    pt: "Entrando...",
+  },
+  continue_with: {
+    en: "Or continue with",
+    pt: "Ou continue com",
+  },
+  dont_have_account: {
+    en: "Don't have an account?",
+    pt: "Não tem uma conta?",
+  },
+  already_have_account: {
+    en: "Already have an account?",
+    pt: "Já tem uma conta?",
+  },
+  enter_credentials: {
+    en: "Enter your credentials to access your account",
+    pt: "Digite suas credenciais para acessar sua conta",
+  },
+  enter_details: {
+    en: "Enter your details to create your account",
+    pt: "Digite seus dados para criar sua conta",
+  },
+  passwords_dont_match: {
+    en: "Passwords do not match",
+    pt: "As senhas não coincidem",
+  },
+  check_email: {
+    en: "Check your email",
+    pt: "Verifique seu e-mail",
+  },
+  email_confirmation_sent: {
+    en: "We've sent you a confirmation link. Please check your email to complete your registration.",
+    pt: "Enviamos um link de confirmação. Por favor, verifique seu e-mail para completar seu cadastro.",
+  },
+  back_to_sign_in: {
+    en: "Back to sign in",
+    pt: "Voltar para login",
+  },
+  reset_password_instructions: {
+    en: "Enter your email address and we'll send you a link to reset your password",
+    pt: "Digite seu e-mail e enviaremos um link para redefinir sua senha",
+  },
+  email_sent: {
+    en: "Email Sent",
+    pt: "E-mail Enviado",
+  },
+  check_inbox: {
+    en: "Check your inbox for the password reset link",
+    pt: "Verifique sua caixa de entrada para o link de redefinição de senha",
+  },
+  return_to_sign_in: {
+    en: "Return to Sign In",
+    pt: "Voltar para Login",
+  },
+  send_reset_link: {
+    en: "Send Reset Link",
+    pt: "Enviar Link de Redefinição",
+  },
+  sending: {
+    en: "Sending...",
+    pt: "Enviando...",
+  },
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("pt")
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguage] = useState<Language>("en")
 
   useEffect(() => {
-    const storedLanguage = localStorage.getItem("language") as Language
-    if (storedLanguage) {
-      setLanguageState(storedLanguage)
+    const savedLanguage = localStorage.getItem("language") as Language
+    if (savedLanguage && (savedLanguage === "en" || savedLanguage === "pt")) {
+      setLanguage(savedLanguage)
     }
   }, [])
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang)
-    localStorage.setItem("language", lang)
+  const t = (key: string): string => {
+    const translationObj = translations[key as keyof typeof translations]
+    if (!translationObj) return key
+    return translationObj[language] || key
   }
 
-  const t = (key: string) => {
-    return translations[key]?.[language] || key
+  const value = {
+    language,
+    setLanguage: (newLanguage: Language) => {
+      localStorage.setItem("language", newLanguage)
+      setLanguage(newLanguage)
+    },
+    t,
   }
 
-  return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
 }
 
 export function useLanguage() {

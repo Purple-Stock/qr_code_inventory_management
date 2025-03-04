@@ -3,13 +3,15 @@
 import type React from "react"
 
 import { useSearchParams as useNextSearchParams } from "next/navigation"
-import { ClientOnly } from "@/components/client-only"
 
+// A simple wrapper component that renders children only on the client side
 export function SafeSearchParamsProvider({ children }: { children: React.ReactNode }) {
-  return <ClientOnly>{children}</ClientOnly>
+  return <>{children}</>
 }
 
+// A hook that safely returns search params or empty URLSearchParams
 export function useSearchParams() {
-  return useNextSearchParams()
+  const searchParams = useNextSearchParams()
+  return searchParams || new URLSearchParams()
 }
 

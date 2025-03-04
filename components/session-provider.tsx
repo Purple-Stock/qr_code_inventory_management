@@ -2,9 +2,10 @@
 
 import type React from "react"
 
-import { createContext, useContext, useEffect } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import { useSession } from "@/hooks/use-session"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { ClientSearchParams } from "@/hooks/use-safe-search-params"
 import type { Session, User } from "@supabase/supabase-js"
 
 interface SessionContextType {
@@ -17,11 +18,10 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined)
 
-export function SessionProvider({ children }: { children: React.ReactNode }) {
+function SessionProviderInner({ children }: { children: React.ReactNode }) {
   const { session, user, isLoading, error, refreshSession } = useSession()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const isLoggingOut = searchParams.get("logout") === "true"
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Clear any stale session data if logging out
   useEffect(() => {
@@ -30,12 +30,28 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("supabase.auth.token")
     }
   }, [isLoggingOut])
-
+  
   return (
-    <SessionContext.Provider value={{ session, user, isLoading, error, refreshSession }}>
-      {children}
-    </SessionContext.Provider>
-  )
+    <ClientSearchParams fallback={null}>
+      {(searchParams) => {
+        // Check if logout param is true
+        const isLogoutParam = searchParams?.get("logout") === "true";
+        if (isLogoutParam !== isLoggingOut) {
+          setIsLoggingOut(isLogoutParam);
+        }
+        
+        return (
+          <SessionContext.Provider value={{ session, user, isLoading, error, refreshSession }}>
+            {children}
+          </SessionContext.Provider>
+        );
+      }}
+    </ClientSearchParams>
+  );
+}
+
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  return <SessionProviderInner>{children}</SessionProviderInner>;
 }
 
 export function useSessionContext() {
@@ -45,4 +61,3 @@ export function useSessionContext() {
   }
   return context
 }
-

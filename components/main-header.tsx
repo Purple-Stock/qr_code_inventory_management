@@ -13,7 +13,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { usePWAInstall } from "@/hooks/use-pwa-install"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import { ClientSearchParams } from "@/hooks/use-safe-search-params"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -25,8 +26,7 @@ export function MainHeader() {
   const supabase = createClientComponentClient()
   const [isLoggingOutState, setIsLoggingOut] = useState(false)
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const isLoggingOutFromParams = searchParams.get("logout") === "true"
+  const [isLoggingOutFromParams, setIsLoggingOutFromParams] = useState(false)
   const shouldHideHeader = isLoggingOutFromParams || isLoggingOutState
 
   if (shouldHideHeader || pathname.includes("/auth/")) {
@@ -47,6 +47,15 @@ export function MainHeader() {
   }
 
   return (
+    <ClientSearchParams fallback={null}>
+      {(searchParams) => {
+        // Update the logout param state when searchParams change
+        const isLogoutParam = searchParams?.get("logout") === "true";
+        if (isLogoutParam !== isLoggingOutFromParams) {
+          setIsLoggingOutFromParams(isLogoutParam);
+        }
+        
+        return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-effect">
       <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold transition-transform hover:scale-105">
@@ -122,6 +131,9 @@ export function MainHeader() {
         </div>
       </div>
     </header>
+        )
+      }}
+    </ClientSearchParams>
   )
 }
 

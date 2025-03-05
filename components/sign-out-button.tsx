@@ -1,18 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
-import { signOut } from "@/lib/auth"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Loader2, LogOut } from "lucide-react"
+import { signOut } from "@/lib/auth" // Make sure this is importing from lib/auth
 
-interface SignOutButtonProps {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-  size?: "default" | "sm" | "lg" | "icon"
-  className?: string
-}
-
-export function SignOutButton({ variant = "default", size = "default", className }: SignOutButtonProps) {
+export function SignOutButton() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -20,7 +14,6 @@ export function SignOutButton({ variant = "default", size = "default", className
     setIsLoading(true)
     try {
       await signOut()
-      // Redirect with a logout parameter to prevent redirect loops
       router.push("/auth/sign-in?logout=true")
     } catch (error) {
       console.error("Error signing out:", error)
@@ -30,9 +23,18 @@ export function SignOutButton({ variant = "default", size = "default", className
   }
 
   return (
-    <Button variant={variant} size={size} className={className} onClick={handleSignOut} disabled={isLoading}>
-      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-      Sign out
+    <Button variant="ghost" size="sm" onClick={handleSignOut} disabled={isLoading}>
+      {isLoading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Signing out...
+        </>
+      ) : (
+        <>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign out
+        </>
+      )}
     </Button>
   )
 }

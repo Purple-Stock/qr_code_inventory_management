@@ -1,16 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/auth"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import type { Session, User } from "@supabase/supabase-js"
+import { supabase } from "@/lib/auth" // Make sure this is importing from lib/auth
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
     // Get the initial session
@@ -24,10 +22,10 @@ export function useSession() {
         }
 
         setSession(data.session)
-        setUser(data.session?.user ?? null)
-      } catch (error) {
-        setError(error as Error)
-        console.error("Error getting session:", error)
+        setUser(data.session?.user || null)
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)))
+        console.error("Error getting session:", err)
       } finally {
         setIsLoading(false)
       }
@@ -35,36 +33,22 @@ export function useSession() {
 
     getInitialSession()
 
-    // Set up the auth state change listener
+    // Set up the auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("Auth state changed:", event)
+      setSession(newSession)
+      setUser(newSession?.user || null)
       setIsLoading(false)
-
-      // Handle auth events
-      if (event === "SIGNED_IN") {
-        router.refresh()
-      }
-      if (event === "SIGNED_OUT") {
-        router.push("/auth/sign-in")
-      }
-      if (event === "PASSWORD_RECOVERY") {
-        router.push("/auth/reset-password")
-      }
-      if (event === "USER_UPDATED") {
-        setUser(session?.user ?? null)
-      }
     })
 
     // Clean up the subscription
     return () => {
       subscription.unsubscribe()
     }
-  }, [router])
+  }, [])
 
-  // Function to refresh the session
   const refreshSession = async () => {
     try {
       setIsLoading(true)
@@ -75,23 +59,17 @@ export function useSession() {
       }
 
       setSession(data.session)
-      setUser(data.session?.user ?? null)
+      setUser(data.session?.user || null)
       return { success: true }
-    } catch (error) {
-      setError(error as Error)
-      console.error("Error refreshing session:", error)
-      return { success: false, error }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)))
+      console.error("Error refreshing session:", err)
+      return { success: false, error: err instanceof Error ? err : new Error(String(err)) }
     } finally {
       setIsLoading(false)
     }
   }
 
-  return {
-    session,
-    user,
-    isLoading,
-    error,
-    refreshSession,
-  }
+  return { session, user, isLoading, error, refreshSession }
 }
 

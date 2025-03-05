@@ -106,7 +106,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (!error) {
-      router.push("/dashboard")
+      // Use window.location for a hard redirect
+      if (typeof window !== "undefined") {
+        window.location.href = "/"
+      }
     }
     return { error }
   }

@@ -8,7 +8,7 @@ type Language = "en" | "pt"
 interface LanguageContextType {
   language: Language
   setLanguage: (language: Language) => void
-  t: (key: string) => string
+  t: (key: string, options?: { [key: string]: string }) => string
 }
 
 const translations = {
@@ -1113,7 +1113,6 @@ const translations = {
     en: "Last updated",
     pt: "Última atualização",
   },
-  added_to: {},
   added_to: {
     en: "Added to",
     pt: "Adicionado a",
@@ -1310,7 +1309,6 @@ const translations = {
     en: "High Quality Print",
     pt: "Impressão em Alta Qualidade",
   },
-
   // Authentication
   sign_in: {
     en: "Sign in",
@@ -1412,6 +1410,27 @@ const translations = {
     en: "Sending...",
     pt: "Enviando...",
   },
+  // Login success/error messages
+  login_successful: {
+    en: "Login successful",
+    pt: "Login realizado com sucesso",
+  },
+  redirecting_to_dashboard: {
+    en: "Redirecting to dashboard...",
+    pt: "Redirecionando para o painel...",
+  },
+  login_failed: {
+    en: "Login failed",
+    pt: "Falha no login",
+  },
+  failed_to_sign_in: {
+    en: "Failed to sign in",
+    pt: "Falha ao entrar",
+  },
+  redirecting: {
+    en: "Redirecting...",
+    pt: "Redirecionando...",
+  },
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -1426,10 +1445,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const t = (key: string): string => {
+  const t = (key: string, options?: { [key: string]: string }): string => {
     const translationObj = translations[key as keyof typeof translations]
     if (!translationObj) return key
-    return translationObj[language] || key
+    let translatedText = translationObj[language] || key
+    if (options) {
+      for (const [optionKey, optionValue] of Object.entries(options)) {
+        translatedText = translatedText.replace(`{${optionKey}}`, optionValue)
+      }
+    }
+    return translatedText
   }
 
   const value = {

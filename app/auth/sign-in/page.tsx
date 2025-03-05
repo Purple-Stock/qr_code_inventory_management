@@ -1,65 +1,109 @@
 "use client"
 
+import { CardFooter } from "@/components/ui/card"
+
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "@/lib/auth"
+import Link from "next/link"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Package, Github } from "lucide-react"
-import { useSessionContext } from "@/components/session-provider"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, Package, Github, CheckCircle2, AlertCircle } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useLanguage } from "@/contexts/language-context"
-import { useSafeSearchParams } from "@/hooks/use-safe-search-params"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignInPage() {
   const { t } = useLanguage()
+  const { toast } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
   const router = useRouter()
-  const { user } = useSessionContext()
-  const searchParams = useSafeSearchParams()
-
-  // Client-side only state for search params
-  const [redirectTo, setRedirectTo] = useState("/dashboard")
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-
-  // Use useEffect to safely access search params on the client
-  useEffect(() => {
-    if (searchParams) {
-      setRedirectTo(searchParams.get("redirect") || "/dashboard")
-      setIsLoggingOut(searchParams.get("logout") === "true")
-    }
-  }, [searchParams])
-
-  useEffect(() => {
-    if (user && !isLoggingOut) {
-      router.push(redirectTo)
-    }
-  }, [user, isLoggingOut, redirectTo, router])
+  const supabase = createClientComponentClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
+    setIsSuccess(false)
 
     try {
-      const { error } = await signIn(email, password)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
       if (error) {
         throw error
       }
 
-      router.push(redirectTo)
+      // Show success message
+      setIsSuccess(true)
+      toast({
+        title: t("login_successful"),
+        description: t("redirecting_to_dashboard"),
+        variant: "default",
+        duration: 3000,
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+      })
+
+      // Add a small delay before redirecting to show the success message
+      setTimeout(() => {
+        router.push("/")
+        router.refresh()
+      }, 1500)
     } catch (err: any) {
-      setError(err.message || t("failed_to_sign_in"))
+      console.error("Sign-in error:", err)
+      const errorMessage = err.message || t("failed_to_sign_in")
+      setError(errorMessage)
+
+      // Show error toast
+      toast({
+        title: t("login_failed"),
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000,
+        icon: <AlertCircle className="h-5 w-5" />,
+      })
     } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGithubSignIn = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (err: any) {
+      console.error("GitHub sign-in error:", err)
+      const errorMessage = err.message || t("failed_to_sign_in_with_github")
+      setError(errorMessage)
+
+      toast({
+        title: t("login_failed"),
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000,
+        icon: <AlertCircle className="h-5 w-5" />,
+      })
       setIsLoading(false)
     }
   }
@@ -94,7 +138,7 @@ export default function SignInPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || isSuccess}
                 />
               </div>
               <div className="space-y-2">
@@ -110,15 +154,34 @@ export default function SignInPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || isSuccess}
                 />
               </div>
-              {error && <div className="rounded bg-destructive/15 p-3 text-sm text-destructive">{error}</div>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+
+              {error && (
+                <div className="rounded bg-destructive/15 p-3 text-sm text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {isSuccess && (
+                <div className="rounded bg-green-100 p-3 text-sm text-green-800 flex items-center gap-2 dark:bg-green-900/30 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                  <span>{t("login_successful")}</span>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isLoading || isSuccess}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {t("signing_in")}
+                  </>
+                ) : isSuccess ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    {t("redirecting")}
                   </>
                 ) : (
                   t("sign_in")
@@ -135,7 +198,7 @@ export default function SignInPage() {
               </div>
             </div>
 
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled={isLoading || isSuccess} onClick={handleGithubSignIn}>
               <Github className="mr-2 h-4 w-4" />
               Github
             </Button>

@@ -18,6 +18,7 @@ import {
   Settings,
   Upload,
   Database,
+  Menu,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -34,6 +35,7 @@ import {
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useLanguage } from "@/contexts/language-context"
@@ -42,6 +44,7 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
   const [isCollapsed, setIsCollapsed] = React.useState(true)
   const [sidebarWidth, setSidebarWidth] = React.useState(240)
   const [openItems, setOpenItems] = React.useState<{ [key: string]: boolean }>({})
+  const [isMobileOpen, setIsMobileOpen] = React.useState(false)
   const pathname = usePathname()
   const { language, setLanguage, t } = useLanguage()
 
@@ -63,7 +66,7 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
     { href: "/adjust", icon: ArrowUpDown, label: "adjust_stock" },
     { href: "/move-stock", icon: MoveRight, label: "move_stock" },
     { href: "/transactions", icon: BarChart, label: "transactions" },
-    { href: "#", icon: Printer, label: "print_barcode", hasSubmenu: true },
+    { href: "/print-labels", icon: Printer, label: "print_barcode" },
     {
       href: "#",
       icon: BarChart,
@@ -88,129 +91,157 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
     { href: "/settings", icon: Settings, label: "settings" },
   ]
 
+  const NavigationContent = () => (
+    <SidebarContent className="p-0">
+      <SidebarGroup className="py-0">
+        <SidebarGroupContent className="gap-0">
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                {item.submenuItems ? (
+                  <SidebarMenuButton
+                    className={cn(
+                      "w-full justify-start transition-colors",
+                      pathname.startsWith(item.href) && "bg-primary/10 text-primary dark:bg-primary/20",
+                    )}
+                    data-state="closed"
+                  >
+                    <div
+                      className="flex items-center gap-2 py-2"
+                      onClick={() => {
+                        if (item.submenuItems) {
+                          setOpenItems((prev) => ({
+                            ...prev,
+                            [item.label]: !prev[item.label],
+                          }))
+                        }
+                      }}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {(!isCollapsed || isMobileOpen) && (
+                        <>
+                          <span>{t(item.label)}</span>
+                          <ChevronDown
+                            className={cn(
+                              "ml-auto h-4 w-4 transition-transform duration-200",
+                              openItems[item.label] && "transform rotate-180",
+                            )}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </SidebarMenuButton>
+                ) : (
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href}
+                    className={cn(
+                      "w-full justify-start transition-colors hover:bg-primary/10",
+                      pathname === item.href && "bg-primary/10 text-primary dark:bg-primary/20",
+                    )}
+                  >
+                    <Link
+                      href={item.href}
+                      className="flex items-center gap-2 py-2"
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {(!isCollapsed || isMobileOpen) && (
+                        <>
+                          <span>{t(item.label)}</span>
+                          {item.hasSubmenu && <ChevronDown className="ml-auto h-4 w-4" />}
+                        </>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                )}
+                {item.submenuItems && (!isCollapsed || isMobileOpen) && openItems[item.label] && (
+                  <SidebarMenuSub>
+                    {item.submenuItems.map((subItem) => (
+                      <SidebarMenuSubItem key={subItem.href}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === subItem.href}
+                          className="hover:bg-primary/5 transition-colors"
+                          onClick={() => setIsMobileOpen(false)}
+                        >
+                          <Link href={subItem.href}>{t(subItem.label)}</Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+  )
+
+  const UserMenu = () => (
+    <div className="absolute bottom-4 left-0 right-0 px-3">
+      <div className="flex items-center gap-2 p-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full flex items-center gap-2 justify-start hover:bg-primary/10 transition-colors"
+            >
+              <Avatar className="h-8 w-8 bg-primary/20 ring-2 ring-primary/20">
+                <AvatarFallback className="text-primary">M</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">Matheus Puppe</p>
+              </div>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Globe className="h-4 w-4" />
+                <span className="text-xs">{language.toUpperCase()}</span>
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[200px]">
+            <DropdownMenuItem onClick={() => setLanguage("en")}>English</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setLanguage("pt")}>Português</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive">
+              <LogOut className="h-4 w-4 mr-2" />
+              {t("logout")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  )
+
   return (
     <>
-      <div className="relative">
+      {/* Desktop Sidebar */}
+      <div className="relative hidden md:block">
         <Sidebar
           className={cn(
-            "border-r transition-all duration-300 ease-in-out bg-background mt-16",
+            "border-r transition-all duration-300 ease-in-out bg-background/80 backdrop-blur-md mt-16 z-[90]",
             isCollapsed ? "w-[60px]" : "w-[240px]",
           )}
         >
-          <SidebarContent className="p-0">
-            <SidebarGroup className="py-0">
-              <SidebarGroupContent className="gap-0">
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      {item.submenuItems ? (
-                        <SidebarMenuButton
-                          className={cn(
-                            "w-full justify-start",
-                            pathname.startsWith(item.href) &&
-                              "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
-                          )}
-                          data-state="closed"
-                        >
-                          <div
-                            className="flex items-center gap-2 py-2"
-                            onClick={() => {
-                              if (item.submenuItems) {
-                                setOpenItems((prev) => ({
-                                  ...prev,
-                                  [item.label]: !prev[item.label],
-                                }))
-                              }
-                            }}
-                          >
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && (
-                              <>
-                                <span>{t(item.label)}</span>
-                                <ChevronDown
-                                  className={cn(
-                                    "ml-auto h-4 w-4 transition-transform duration-200",
-                                    openItems[item.label] && "transform rotate-180",
-                                  )}
-                                />
-                              </>
-                            )}
-                          </div>
-                        </SidebarMenuButton>
-                      ) : (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={pathname === item.href}
-                          className={cn(
-                            "w-full justify-start",
-                            pathname === item.href &&
-                              "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-200",
-                          )}
-                        >
-                          <Link href={item.href} className="flex items-center gap-2 py-2">
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && (
-                              <>
-                                <span>{t(item.label)}</span>
-                                {item.hasSubmenu && <ChevronDown className="ml-auto h-4 w-4" />}
-                              </>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                      {item.submenuItems && !isCollapsed && openItems[item.label] && (
-                        <SidebarMenuSub>
-                          {item.submenuItems.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.href}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
-                                <Link href={subItem.href}>{t(subItem.label)}</Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      )}
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          {!isCollapsed && (
-            <div className="absolute bottom-4 left-0 right-0 px-3">
-              <div className="flex items-center gap-2 p-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full flex items-center gap-2 justify-start hover:bg-muted/50">
-                      <Avatar className="h-8 w-8 bg-purple-600">
-                        <AvatarFallback>M</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 text-left">
-                        <p className="text-sm font-medium">Matheus Puppe</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Globe className="h-4 w-4" />
-                        <span className="text-xs">{language.toUpperCase()}</span>
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-[200px]">
-                    <DropdownMenuItem onClick={() => setLanguage("en")}>English</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLanguage("pt")}>Português</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      {t("logout")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          )}
+          <NavigationContent />
+          {!isCollapsed && <UserMenu />}
         </Sidebar>
         <Button
           variant="outline"
           size="icon"
-          className="fixed z-50 h-8 w-8 rounded-full bg-background p-0 transition-all duration-300 ease-in-out dark:bg-gray-800 dark:hover:bg-gray-700"
-          style={{ left: `${sidebarWidth - 12}px`, top: "80px" }}
+          className={cn(
+            "fixed z-[100] h-8 w-8 rounded-full bg-background p-0",
+            "transition-all duration-300 ease-in-out",
+            "hover:bg-primary/10 hover:text-primary",
+            "dark:bg-background dark:hover:bg-primary/20",
+            "gradient-border",
+          )}
+          style={{
+            position: "fixed",
+            left: `${sidebarWidth - 12}px`,
+            top: "80px",
+            transform: "translateZ(0)",
+          }}
           onClick={() => {
             const newState = !isCollapsed
             setIsCollapsed(newState)
@@ -220,6 +251,24 @@ export default function MainNav({ onToggle }: { onToggle?: (collapsed: boolean) 
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <div className="md:hidden">
+        <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="fixed left-4 top-[72px] z-40 hover:bg-primary/10">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[240px] p-0 backdrop-blur-xl bg-background/80">
+            <div className="mt-16">
+              <NavigationContent />
+              <UserMenu />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </>
   )

@@ -1,35 +1,28 @@
 import "@/styles/globals.css"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import type React from "react"
 
 import { siteConfig } from "@/config/site"
-import { fontSans } from "@/lib/fonts"
+import { inter } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { LanguageProvider } from "@/contexts/language-context"
 import { MainHeader } from "@/components/main-header"
+import { SessionProvider } from "@/components/session-provider"
+import { SessionGuard } from "@/components/session-guard"
+import { SessionExpiryHandler } from "@/components/session-expiry-handler"
+import { SafeSearchParamsProvider } from "@/hooks/use-safe-search-params"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
+  title: "Purple Stock",
+  description: "Inventory Management System",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-16x16.png",
     apple: "/apple-touch-icon.png",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
   },
   appleWebApp: {
     capable: true,
@@ -40,6 +33,16 @@ export const metadata: Metadata = {
     telephone: false,
   },
     generator: 'v0.dev'
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor.light },
+    { media: "(prefers-color-scheme: dark)", color: siteConfig.themeColor.dark },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 interface RootLayoutProps {
@@ -56,17 +59,35 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <meta name="apple-mobile-web-app-title" content={siteConfig.name} />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#7c3aed" />
+        <meta name="theme-color" content={siteConfig.themeColor.light} />
       </head>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
+      <body
+        className={cn(
+          "min-h-screen antialiased",
+          "bg-gradient-to-b from-background to-background/80",
+          "dark:from-background dark:to-background/50",
+          inter.className,
+        )}
+      >
+        <div className="fixed inset-0 bg-grid-black/[0.02] dark:bg-grid-white/[0.02]" />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <LanguageProvider>
-            <SidebarProvider>
-              <div className="relative flex min-h-screen flex-col">
-                <MainHeader />
-                <div className="flex-1 pt-16">{children}</div>
-              </div>
-            </SidebarProvider>
+            <SessionProvider>
+              <SafeSearchParamsProvider>
+                <SidebarProvider>
+                  <div className="relative flex min-h-screen flex-col">
+                    <MainHeader />
+                    <div className="flex-1 pt-16">
+                      <SessionGuard>
+                        {children}
+                        <SessionExpiryHandler />
+                        <Toaster />
+                      </SessionGuard>
+                    </div>
+                  </div>
+                </SidebarProvider>
+              </SafeSearchParamsProvider>
+            </SessionProvider>
           </LanguageProvider>
         </ThemeProvider>
         <script

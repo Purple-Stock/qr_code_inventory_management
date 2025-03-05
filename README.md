@@ -81,34 +81,34 @@ Purple Stock is a comprehensive inventory management system designed for busines
 - Supabase account
 
 ### Environment Variables
-Create a `.env.local` file with:
-```
+Create a \`.env.local\` file with:
+\`\`\`
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+\`\`\`
 
 ### Installation
 
 1. Clone the repository:
-```bash
+\`\`\`bash
 git clone https://github.com/yourusername/purple-stock.git
 cd purple-stock
-```
+\`\`\`
 
 2. Install dependencies:
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 3. Run database migrations:
-```bash
+\`\`\`bash
 npm run migrate
-```
+\`\`\`
 
 4. Start the development server:
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 ## Database Setup
 
@@ -120,7 +120,7 @@ The application uses Supabase with the following key tables:
 - stock_movements
 - location_history
 
-Database migrations are provided in the `/migrations` directory.
+Database migrations are provided in the \`/migrations\` directory.
 
 ## Contributing
 
@@ -144,3 +144,4 @@ For support, please open an issue in the GitHub repository or contact the mainte
 - Supabase for the backend infrastructure
 - Next.js team for the framework
 - All contributors who have helped shape this project
+

@@ -1,3 +1,9 @@
+"use client"
+
+import { useEffect } from "react"
+
+import { useState } from "react"
+
 import { Suspense } from "react"
 import MainNav from "@/components/main-nav"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
@@ -30,9 +36,8 @@ function ErrorMessage() {
   return <div className="p-6">{t("error_loading_metrics")}</div>
 }
 
-async function SummaryMetrics() {
+function SummaryMetrics({ metrics }: { metrics: any }) {
   const { t } = useLanguage()
-  const metrics = await getSummaryMetrics()
 
   if (!metrics) {
     return <ErrorMessage />
@@ -90,9 +95,8 @@ async function SummaryMetrics() {
   )
 }
 
-async function RecentActivitySection() {
+function RecentActivitySection({ recentActivity }: { recentActivity: any[] }) {
   const { t } = useLanguage()
-  const recentActivity = await getRecentActivity()
 
   return (
     <Card>
@@ -148,9 +152,8 @@ async function RecentActivitySection() {
   )
 }
 
-async function StockWarningsSection() {
+function StockWarningsSection({ stockWarnings }: { stockWarnings: any[] }) {
   const { t } = useLanguage()
-  const stockWarnings = await getStockWarnings()
 
   return (
     <Card>
@@ -182,9 +185,8 @@ async function StockWarningsSection() {
   )
 }
 
-async function TopItemsSection() {
+function TopItemsSection({ topItems }: { topItems: any[] }) {
   const { t } = useLanguage()
-  const topItems = await getTopItems()
 
   return (
     <Card>
@@ -224,25 +226,46 @@ async function TopItemsSection() {
   )
 }
 
-async function SummaryContent() {
+function SummaryContent() {
+  const [metrics, setMetrics] = useState(null)
+  const [recentActivity, setRecentActivity] = useState([])
+  const [stockWarnings, setStockWarnings] = useState([])
+  const [topItems, setTopItems] = useState([])
+
+  useEffect(() => {
+    async function fetchData() {
+      const [metricsData, activityData, warningsData, itemsData] = await Promise.all([
+        getSummaryMetrics(),
+        getRecentActivity(),
+        getStockWarnings(),
+        getTopItems(),
+      ])
+      setMetrics(metricsData)
+      setRecentActivity(activityData)
+      setStockWarnings(warningsData)
+      setTopItems(itemsData)
+    }
+    fetchData()
+  }, [])
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <Suspense fallback={<LoadingMessage />}>
-        <SummaryMetrics />
+        <SummaryMetrics metrics={metrics} />
       </Suspense>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Suspense fallback={<LoadingMessage />}>
-          <RecentActivitySection />
+          <RecentActivitySection recentActivity={recentActivity} />
         </Suspense>
 
         <Suspense fallback={<LoadingMessage />}>
-          <StockWarningsSection />
+          <StockWarningsSection stockWarnings={stockWarnings} />
         </Suspense>
       </div>
 
       <Suspense fallback={<LoadingMessage />}>
-        <TopItemsSection />
+        <TopItemsSection topItems={topItems} />
       </Suspense>
     </div>
   )

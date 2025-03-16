@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator"
 import { Package, Github, Loader2 } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignUpPage() {
   const { t } = useLanguage()
@@ -24,6 +25,7 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +35,11 @@ export default function SignUpPage() {
     if (password !== confirmPassword) {
       setError(t("passwords_dont_match"))
       setIsLoading(false)
+      toast({
+        variant: "destructive",
+        title: t("sign_up_failed"),
+        description: t("passwords_dont_match"),
+      })
       return
     }
 
@@ -40,11 +47,26 @@ export default function SignUpPage() {
       const { error } = await signUp(email, password)
       if (error) {
         setError(error.message)
+        toast({
+          variant: "destructive",
+          title: t("sign_up_failed"),
+          description: error.message,
+        })
       } else {
         setIsSuccess(true)
+        toast({
+          title: t("account_created"),
+          description: t("email_confirmation_sent"),
+          duration: 5000,
+        })
       }
     } catch (err) {
       setError(t("unexpected_error"))
+      toast({
+        variant: "destructive",
+        title: t("sign_up_failed"),
+        description: t("unexpected_error"),
+      })
     } finally {
       setIsLoading(false)
     }

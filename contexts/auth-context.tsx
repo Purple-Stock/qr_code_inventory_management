@@ -35,10 +35,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        setUser(null)
+        setProfile(null)
+        setCompanies([])
+        setCurrentCompany(null)
+        setIsLoading(false)
+        return
+      }
+
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        await fetchUserData(session.user.id)
+        try {
+          await fetchUserData(session.user.id)
+        } catch (error) {
+          console.error("Error fetching user data:", error)
+          // If we can't fetch user data, sign out to clear invalid session
+          await supabase.auth.signOut()
+          setUser(null)
+          setProfile(null)
+          setCompanies([])
+          setCurrentCompany(null)
+        }
       } else {
         setProfile(null)
         setCompanies([])
@@ -49,11 +68,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Session error:", error)
+        setIsLoading(false)
+        return
+      }
+
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        fetchUserData(session.user.id)
+        fetchUserData(session.user.id).catch((error) => {
+          console.error("Error fetching initial user data:", error)
+          // If we can't fetch user data, sign out to clear invalid session
+          supabase.auth.signOut().then(() => {
+            setUser(null)
+            setProfile(null)
+            setCompanies([])
+            setCurrentCompany(null)
+            setIsLoading(false)
+          })
+        })
       } else {
         setIsLoading(false)
       }
@@ -138,8 +173,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
-    router.push("/login")
+    try {
+      // Clear local storage first
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("currentCompanyId")
+      }
+
+      await supabase.auth.signOut()
+
+      // Force clear state regardless of API success
+      setUser(null)
+      setProfile(null)
+      setCompanies([])
+      setCurrentCompany(null)
+
+      router.push("/login")
+    } catch (error) {
+      console.error("Error during sign out:", error)
+      // Force clear state even if API fails
+      setUser(null)
+      setProfile(null)
+      setCompanies([])
+      setCurrentCompany(null)
+      router.push("/login")
+    }
   }
 
   async function createCompany(name: string) {

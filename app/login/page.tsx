@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase-client"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -26,6 +27,9 @@ export default function LoginPage() {
     setError(null)
 
     try {
+      // Clear any existing sessions first to avoid conflicts
+      await supabase.auth.signOut()
+
       const { error } = await signIn(email, password)
       if (error) {
         setError(error.message)

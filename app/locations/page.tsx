@@ -13,12 +13,14 @@ import { useLanguage } from "@/contexts/language-context"
 import { getLocations } from "@/app/actions"
 import { AddEditLocationDialog } from "@/components/add-edit-location-dialog"
 import { DeleteLocationAlert } from "@/components/delete-location-alert"
-// import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import type { Database } from "@/types/database"
+import { useTeam } from "@/contexts/team-context"
 
 type Location = Database["public"]["Tables"]["locations"]["Row"]
 
 export default function LocationsPage() {
+  const { activeTeam } = useTeam()
   const { t } = useLanguage()
   const [locations, setLocations] = useState<Location[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -26,11 +28,13 @@ export default function LocationsPage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [locationToDelete, setLocationToDelete] = useState<{ id: number; name: string } | null>(null)
-  // const router = useRouter()
+  const router = useRouter()
 
   useEffect(() => {
-    loadLocations()
-  }, [])
+    if (activeTeam) {
+      loadLocations()
+    }
+  }, [activeTeam])
 
   async function loadLocations() {
     try {
@@ -58,6 +62,17 @@ export default function LocationsPage() {
   const handleLocationDeleted = () => {
     setLocationToDelete(null)
     loadLocations()
+  }
+
+  if (!activeTeam) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">{t("select_team_first")}</p>
+          <Button onClick={() => router.push('/teams/select')}>{t("select_team")}</Button>
+        </div>
+      </div>
+    )
   }
 
   return (

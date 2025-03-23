@@ -13,6 +13,7 @@ import { createLocation, updateLocation } from "@/app/actions"
 import { toast } from "@/components/ui/use-toast"
 import { useLanguage } from "@/contexts/language-context"
 import type { Database } from "@/types/database"
+import { useTeam } from "@/contexts/team-context"
 
 type Location = Database["public"]["Tables"]["locations"]["Row"]
 
@@ -33,13 +34,24 @@ export function AddEditLocationDialog({
 }: AddEditLocationDialogProps) {
   const { t } = useLanguage()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { activeTeam } = useTeam()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (!activeTeam) {
+      toast({
+        title: t("error"),
+        description: t("need_to_select_team"),
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const formData = new FormData(e.currentTarget)
+      formData.append("team_id", activeTeam.id.toString())
       const result = location ? await updateLocation(formData) : await createLocation(formData)
 
       if (result.success) {

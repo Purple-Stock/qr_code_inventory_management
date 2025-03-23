@@ -14,6 +14,7 @@ import { SessionGuard } from "@/components/session-guard"
 import { SessionExpiryHandler } from "@/components/session-expiry-handler"
 import { SafeSearchParamsProvider } from "@/hooks/use-safe-search-params"
 import { Toaster } from "@/components/ui/toaster"
+import { TeamProvider } from '@/contexts/team-context'
 
 export const metadata: Metadata = {
   title: "Purple Stock",
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <meta name="theme-color" content={siteConfig.themeColor.light} />
       </head>
       <body
+        suppressHydrationWarning
         className={cn(
           "min-h-screen antialiased",
           "bg-gradient-to-b from-background to-background/80",
@@ -75,16 +77,18 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <SessionProvider>
               <SafeSearchParamsProvider>
                 <SidebarProvider>
-                  <div className="relative flex min-h-screen flex-col">
-                    <MainHeader />
-                    <div className="flex-1 pt-16">
-                      <SessionGuard>
-                        {children}
-                        <SessionExpiryHandler />
-                        <Toaster />
-                      </SessionGuard>
+                  <TeamProvider>
+                    <div className="relative flex min-h-screen flex-col">
+                      <MainHeader />
+                      <div className="flex-1 pt-16">
+                        <SessionGuard>
+                          {children}
+                          <SessionExpiryHandler />
+                          <Toaster />
+                        </SessionGuard>
+                      </div>
                     </div>
-                  </div>
+                  </TeamProvider>
                 </SidebarProvider>
               </SafeSearchParamsProvider>
             </SessionProvider>

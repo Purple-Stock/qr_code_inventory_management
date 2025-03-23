@@ -6,6 +6,9 @@ import { supabase } from "@/lib/supabase"
 import { parseCsvContent, generateCsv } from "@/lib/csv"
 import type { Database } from "@/types/database"
 import { dummyItems, dummySupplier } from "@/lib/dummyData"
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { createServerSupabase } from '@/lib/supabase-server'
 
 type Item = Database["public"]["Tables"]["items"]["Row"]
 
@@ -45,86 +48,59 @@ export async function generateBarcode() {
   return barcode
 }
 
+export async function getActiveTeamId() {
+  const cookieStore = cookies()
+  const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore })
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data } = await supabase
+    .from('active_team')
+    .select('team_id')
+    .eq('user_id', user.id)
+    .single()
+
+  return data?.team_id || null
+}
+
 export async function createItem(formData: FormData) {
   try {
-    // Validate required fields
-    const sku = formData.get("sku") as string
-    const name = formData.get("name") as string
-    const barcode = formData.get("barcode") as string
-    const costStr = formData.get("cost") as string
-    const priceStr = formData.get("price") as string
-    const type = formData.get("type") as string
-    const brand = formData.get("brand") as string
-    const locationId = formData.get("location_id") as string
-    const initialQuantityStr = formData.get("initial-quantity") as string
-    const categoryId = formData.get("category_id") as string
+    const teamId = await getActiveTeamId()
+    if (!teamId) throw new Error("No active team")
 
-    if (!sku || !name) {
-      return { success: false, message: "SKU and Name are required fields" }
+    const cookieStore = cookies()
+    const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore })
+
+    const itemData = {
+      team_id: teamId,
+      sku: formData.get("sku") as string,
+      name: formData.get("name") as string,
+      barcode: formData.get("barcode") as string,
+      type: formData.get("type") as string,
+      brand: formData.get("brand") as string,
+      cost: parseFloat(formData.get("cost") as string),
+      price: parseFloat(formData.get("price") as string),
+      category_id: parseInt(formData.get("category_id") as string),
+      initial_quantity: parseInt(formData.get("initial-quantity") as string),
+      current_quantity: parseInt(formData.get("initial-quantity") as string),
     }
 
-    // Parse and validate numeric fields
-    const cost = costStr ? Number.parseFloat(costStr) : 0
-    const price = priceStr ? Number.parseFloat(priceStr) : 0
-    const initial_quantity = initialQuantityStr ? Number.parseInt(initialQuantityStr) : 0
-    const category_id = categoryId ? Number.parseInt(categoryId) : null
-    const location_id = locationId ? Number.parseInt(locationId) : null
-
-    if (isNaN(cost) || isNaN(price) || isNaN(initial_quantity)) {
-      return { success: false, message: "Invalid numeric values provided" }
-    }
-
-    // Start a Supabase transaction
-    const { data: item, error: itemError } = await supabase
+    const { error } = await supabase
       .from("items")
-      .insert({
-        sku,
-        name,
-        barcode: barcode || "",
-        cost,
-        price,
-        type: type || "",
-        brand: brand || "",
-        category_id,
-        initial_quantity,
-        current_quantity: initial_quantity,
-      })
-      .select()
-      .single()
+      .insert(itemData)
 
-    if (itemError) throw itemError
+    if (error) throw error
 
-    // Create item_locations entry if location is provided
-    if (location_id) {
-      const { error: locationError } = await supabase.from("item_locations").insert({
-        item_id: item.id,
-        location_id,
-        current_quantity: initial_quantity,
-      })
-
-      if (locationError) throw locationError
-
-      // Create initial stock transaction
-      if (initial_quantity > 0) {
-        const { error: transactionError } = await supabase.from("stock_transactions").insert({
-          item_id: item.id,
-          type: "stock_in",
-          quantity: initial_quantity,
-          to_location_id: location_id,
-          memo: "Initial quantity",
-        })
-
-        if (transactionError) throw transactionError
-      }
+    return {
+      success: true,
+      message: "Item created successfully",
     }
-
-    revalidatePath("/")
-    return { success: true, message: "Item created successfully", item }
   } catch (error) {
     console.error("Error creating item:", error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : "An unexpected error occurred",
+      message: error instanceof Error ? error.message : "Failed to create item",
     }
   }
 }
@@ -624,34 +600,66 @@ export async function createStockMove(formData: FormData) {
 
 export async function getCategories() {
   try {
-    const { data: categories, error } = await supabase
+    const cookieStore = cookies()
+    const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore })
+
+    // Get the current user's active team
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("User not authenticated")
+
+    const { data: activeTeam } = await supabase
+      .from('active_team')
+      .select('team_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!activeTeam?.team_id) throw new Error("No active team found")
+
+    // Get categories for the active team
+    const { data, error } = await supabase
       .from("categories")
-      .select()
-      .eq("is_active", true)
-      .order("name", { ascending: true })
+      .select("*")
+      .eq('team_id', activeTeam.team_id)
+      .eq('is_active', true)
+      .order("name")
 
     if (error) throw error
-
-    return categories
+    return data || []
   } catch (error) {
-    console.error("Error getting categories:", error)
+    console.error("Error loading categories:", error)
     return []
   }
 }
 
 export async function getLocations() {
   try {
-    const { data: locations, error } = await supabase
+    const cookieStore = cookies()
+    const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore })
+
+    // Get the current user's active team
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("User not authenticated")
+
+    const { data: activeTeam } = await supabase
+      .from('active_team')
+      .select('team_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!activeTeam?.team_id) throw new Error("No active team found")
+
+    // Get locations for the active team
+    const { data, error } = await supabase
       .from("locations")
-      .select()
-      .eq("is_active", true)
-      .order("name", { ascending: true })
+      .select("*")
+      .eq('team_id', activeTeam.team_id)
+      .eq('is_active', true)
+      .order("name")
 
     if (error) throw error
-
-    return locations
+    return data || []
   } catch (error) {
-    console.error("Error getting locations:", error)
+    console.error("Error loading locations:", error)
     return []
   }
 }
@@ -769,33 +777,34 @@ export async function deleteSupplier(id: number) {
 
 export async function createLocation(formData: FormData) {
   try {
-    const name = formData.get("name") as string
-    const description = formData.get("description") as string
-    const parent_id = formData.get("parent_id") as string
+    const cookieStore = cookies()
+    const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore })
 
-    if (!name) {
-      return { success: false, message: "Name is required" }
+    // Get the current user's active team
+    const teamId = await getActiveTeamId()
+    if (!teamId) throw new Error("No active team")
+
+    const locationData = {
+      team_id: teamId,
+      name: formData.get("name") as string,
+      description: formData.get("description") as string,
+      parent_id: formData.get("parent_id") ? parseInt(formData.get("parent_id") as string) : null,
+      is_active: true
     }
 
-    const { data: location, error } = await supabase
+    const { error } = await supabase
       .from("locations")
-      .insert({
-        name,
-        description: description || null,
-        parent_id: parent_id === "null" ? null : Number(parent_id),
-      })
-      .select()
-      .single()
+      .insert(locationData)
 
     if (error) throw error
 
     revalidatePath("/locations")
-    return { success: true, message: "Location created successfully", location }
+    return { success: true, message: "Location created successfully" }
   } catch (error) {
     console.error("Error creating location:", error)
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "An unexpected error occurred",
+    return { 
+      success: false, 
+      message: error instanceof Error ? error.message : "Failed to create location" 
     }
   }
 }
@@ -916,5 +925,10 @@ export async function getTransactionDetails(id: number) {
 
   if (error) throw error
   return transaction
+}
+
+export async function someOtherAction() {
+  const supabase = await createServerSupabase()
+  // ... rest of the code
 }
 

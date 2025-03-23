@@ -96,6 +96,7 @@ export interface Database {
           is_active: boolean
           current_quantity: number
           company_id: number
+          team_id: number
           categories?: {
             id: number
             name: string
@@ -122,6 +123,7 @@ export interface Database {
           is_active?: boolean
           current_quantity?: number
           company_id: number
+          team_id: number
         }
         Update: {
           id?: number
@@ -140,6 +142,7 @@ export interface Database {
           is_active?: boolean
           current_quantity?: number
           company_id?: number
+          team_id?: number
         }
       }
       categories: {
